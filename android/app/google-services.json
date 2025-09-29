@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1056315876298",
+    "project_id": "vrukshamojani-4ffd6",
+    "storage_bucket": "vrukshamojani-4ffd6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1056315876298:android:236d9735f581956a8ee533",
+        "android_client_info": {
+          "package_name": "com.example.plantation_summary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1iAbzV2ulwA__OQIvq2a_rz1L1Wr3Rig"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
