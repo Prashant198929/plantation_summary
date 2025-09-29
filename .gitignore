@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+asterix_story_log.json
 
 # IntelliJ related
 *.iml
