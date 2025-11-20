@@ -34,7 +34,7 @@
         <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDiMr_gDcxNg7HtPD3WzcHAGuYsQKdAulY" />    
+            android:value="" />    
 
          <meta-data
             android:name="firebase_messaging_auto_init_enabled"
