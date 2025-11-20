@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:plantation_summary/login_page.dart';
 import 'package:plantation_summary/plantation_list_page.dart';
 import 'package:plantation_summary/broadcast_page.dart';
+import 'package:plantation_summary/attendance_page.dart';
 import 'user_role_management_page.dart';
 import 'zone_management_page.dart';
 import 'report_page.dart';
@@ -14,10 +15,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'firebase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await FirebaseConfig.initialize();
 
   // Request notification permission before app starts
   await FirebaseMessaging.instance.requestPermission(
@@ -57,6 +60,42 @@ void main() async {
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage != null) {
     await saveNotification(initialMessage);
+  }
+
+  // Listen for FCM token refresh and update Firestore
+  FirebaseMessaging.instance.onTokenRefresh.listen((String newToken) async {
+    if (loggedInMobile != null) {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('mobile', isEqualTo: loggedInMobile)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.update({'fcmToken': newToken});
+      }
+      // Log event to vrukshamojaniattendancelogs Firestore
+      await FirebaseConfig.initialize();
+      await FirebaseConfig.logEvent(
+        eventType: 'token_refresh',
+        description: 'FCM token refreshed',
+        userId: loggedInMobile,
+        details: {'newToken': newToken},
+        collectionName: 'Register_Logs',
+      );
+    }
+  });
+
+  // Also update Firestore with the current token at startup
+  final currentToken = await FirebaseMessaging.instance.getToken();
+  if (loggedInMobile != null && currentToken != null) {
+    final query = await FirebaseFirestore.instance
+        .collection('users')
+        .where('mobile', isEqualTo: loggedInMobile)
+        .limit(1)
+        .get();
+    if (query.docs.isNotEmpty) {
+      await query.docs.first.reference.update({'fcmToken': currentToken});
+    }
   }
 
   runApp(const MyApp());
@@ -107,46 +146,65 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return
+
+
+      MaterialApp(
       home: const LoginPage(),
       title: 'Plantation Summary',
       theme: ThemeData(
         colorScheme: ColorScheme(
           brightness: Brightness.light,
-          primary: Colors.green,
+          primary: Color(0xFF388E3C), // Deep green
           onPrimary: Colors.white,
-          secondary: Colors.amber,
+          secondary: Color(0xFFFFB300), // Vivid amber
           onSecondary: Colors.black,
-          error: Colors.red,
+          error: Color(0xFFD32F2F), // Strong red
           onError: Colors.white,
-          background: Color(0xFFF6F8F6),
+          background: Color(0xFFF1F8E9), // Light green background
           onBackground: Colors.black,
-          surface: Colors.white,
+          surface: Color(0xFFFFFFFF),
           onSurface: Colors.black,
         ),
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.green,
+          backgroundColor: Color(0xFF388E3C),
           foregroundColor: Colors.white,
-          iconTheme: IconThemeData(color: Colors.amber),
+          iconTheme: IconThemeData(color: Color(0xFFFFB300)),
+          titleTextStyle: TextStyle(
+            color: Color(0xFFFFB300),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
+            backgroundColor: Color(0xFF388E3C),
             foregroundColor: Colors.white,
             textStyle: TextStyle(fontWeight: FontWeight.bold),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
+            elevation: 3,
+            shadowColor: Color(0xFFB2DFDB),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Colors.green),
+            borderSide: BorderSide(color: Color(0xFF388E3C)),
+            borderRadius: BorderRadius.circular(10),
           ),
-          labelStyle: TextStyle(color: Colors.green),
+          labelStyle: TextStyle(color: Color(0xFF388E3C)),
+          fillColor: Color(0xFFE8F5E9),
+          filled: true,
         ),
-        scaffoldBackgroundColor: Color(0xFFF6F8F6),
+        scaffoldBackgroundColor: Color(0xFFF1F8E9),
+        cardColor: Color(0xFFE8F5E9),
+        // Removed tabBarTheme due to type incompatibility with Flutter version
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: Color(0xFF388E3C),
+          contentTextStyle: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -212,9 +270,7 @@ class _PlantationFormState extends State<PlantationForm> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a zone name to filter.'),
-        ),
+        const SnackBar(content: Text('Please select a zone name to filter.')),
       );
     }
   }
@@ -222,7 +278,7 @@ class _PlantationFormState extends State<PlantationForm> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 7,
+      length: 8,
       child: Scaffold(
         appBar: AppBar(
           title: Center(
@@ -238,6 +294,7 @@ class _PlantationFormState extends State<PlantationForm> {
               Tab(text: 'Broadcast Message'),
               Tab(text: 'Reports'),
               Tab(text: 'Users'),
+              Tab(text: 'Attendance'),
               Tab(text: 'Contact'),
             ],
             labelColor: Colors.orange,
@@ -298,13 +355,23 @@ class _PlantationFormState extends State<PlantationForm> {
                                         return Column(
                                           children: [
                                             FutureBuilder<QuerySnapshot>(
-                                              future: FirebaseFirestore.instance.collection('zones').get(),
+                                              future: FirebaseFirestore.instance
+                                                  .collection('zones')
+                                                  .get(),
                                               builder: (context, zoneSnapshot) {
                                                 List<String> zones = [];
-                                                if (zoneSnapshot.connectionState == ConnectionState.done &&
+                                                if (zoneSnapshot
+                                                            .connectionState ==
+                                                        ConnectionState.done &&
                                                     zoneSnapshot.hasData) {
-                                                  zones = zoneSnapshot.data!.docs
-                                                      .map((doc) => doc['name'] as String)
+                                                  zones = zoneSnapshot
+                                                      .data!
+                                                      .docs
+                                                      .map(
+                                                        (doc) =>
+                                                            doc['name']
+                                                                as String,
+                                                      )
                                                       .toList();
                                                 }
                                                 return Row(
@@ -312,25 +379,36 @@ class _PlantationFormState extends State<PlantationForm> {
                                                     Expanded(
                                                       child: DropdownButtonFormField<String>(
                                                         value: _selectedZone,
-                                                        decoration: const InputDecoration(
-                                                          labelText: 'Zone Name',
-                                                          border: OutlineInputBorder(),
-                                                        ),
+                                                        decoration:
+                                                            const InputDecoration(
+                                                              labelText:
+                                                                  'Zone Name',
+                                                              border:
+                                                                  OutlineInputBorder(),
+                                                            ),
                                                         items: zones
-                                                            .map((zone) => DropdownMenuItem(
-                                                                  value: zone,
-                                                                  child: Text(zone),
-                                                                ))
+                                                            .map(
+                                                              (zone) =>
+                                                                  DropdownMenuItem(
+                                                                    value: zone,
+                                                                    child: Text(
+                                                                      zone,
+                                                                    ),
+                                                                  ),
+                                                            )
                                                             .toList(),
                                                         onChanged: (value) {
                                                           setState(() {
-                                                            _selectedZone = value;
+                                                            _selectedZone =
+                                                                value;
                                                           });
                                                         },
                                                       ),
                                                     ),
                                                     IconButton(
-                                                      icon: const Icon(Icons.menu),
+                                                      icon: const Icon(
+                                                        Icons.menu,
+                                                      ),
                                                       tooltip: 'More options',
                                                       onPressed: () {
                                                         // Implement menu logic here
@@ -339,18 +417,34 @@ class _PlantationFormState extends State<PlantationForm> {
                                                           builder: (context) => ListView(
                                                             children: [
                                                               ListTile(
-                                                                leading: const Icon(Icons.info),
-                                                                title: const Text('Zone Info'),
+                                                                leading:
+                                                                    const Icon(
+                                                                      Icons
+                                                                          .info,
+                                                                    ),
+                                                                title: const Text(
+                                                                  'Zone Info',
+                                                                ),
                                                                 onTap: () {
-                                                                  Navigator.pop(context);
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  );
                                                                   // Implement zone info logic
                                                                 },
                                                               ),
                                                               ListTile(
-                                                                leading: const Icon(Icons.settings),
-                                                                title: const Text('Settings'),
+                                                                leading: const Icon(
+                                                                  Icons
+                                                                      .settings,
+                                                                ),
+                                                                title:
+                                                                    const Text(
+                                                                      'Settings',
+                                                                    ),
                                                                 onTap: () {
-                                                                  Navigator.pop(context);
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  );
                                                                   // Implement settings logic
                                                                 },
                                                               ),
@@ -537,6 +631,37 @@ class _PlantationFormState extends State<PlantationForm> {
                           );
                         },
                         child: const Text('User Role Management'),
+                      ),
+                    ],
+                  ),
+                ),
+                // Attendance Tab
+                Padding(
+                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          if (!isSuperAdmin) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Only super admin can access this feature.',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AttendancePage(userFirestore: FirebaseFirestore.instance),
+                            ),
+                          );
+                        },
+                        child: const Text('Attendance Management'),
                       ),
                     ],
                   ),

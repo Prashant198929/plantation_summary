@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:plantation_summary/main.dart';
+import 'firebase_config.dart';
 
 class BroadcastPage extends StatefulWidget {
   const BroadcastPage({Key? key}) : super(key: key);
@@ -149,6 +150,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
       }
     }
 
+    await FirebaseConfig.logEvent(
+      eventType: 'broadcast_sent',
+      description: 'Broadcast sent to selected devices',
+      details: {
+        'message': message,
+        'phones': _selectedPhones,
+      },
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Broadcast sent to selected devices')),
     );
@@ -161,260 +170,191 @@ class _BroadcastPageState extends State<BroadcastPage> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('Broadcast Message'),
-          actions: [
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert),
-              onSelected: (value) async {
-                if (value == 'Received') {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text('Received Notifications'),
-                      content: FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _getLocalNotifications(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
-                          }
-                          final notifications = snapshot.data ?? [];
-                          if (notifications.isEmpty) {
-                            return Text('No notifications received yet.');
-                          }
-                          return Container(
-                            width: double.maxFinite,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: notifications.length,
-                              itemBuilder: (context, index) {
-                                final data = notifications[index];
-                                return ListTile(
-                                  title: Text(data['title'] ?? ''),
-                                  subtitle: Text(data['body'] ?? ''),
-                                  trailing: Text(
-                                    data['receivedAt'] ?? '',
-                                    style: TextStyle(fontSize: 10),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Close'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else if (value == 'Sent') {
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text('Sent Notifications'),
-                      content: StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('broadcasts')
-                            .orderBy('sentAt', descending: true)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
-                          }
-                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                            return Text('No sent notifications.');
-                          }
-                          final sent = snapshot.data!.docs;
-                          return Container(
-                            width: double.maxFinite,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: sent.length,
-                              itemBuilder: (context, index) {
-                                final doc = sent[index];
-                                final data = doc.data() as Map<String, dynamic>;
-                                return ListTile(
-                                  title: Text(data['message'] ?? ''),
-                                  subtitle: Text('To: ${data['phone'] ?? ''}'),
-                                  trailing: Text(
-                                    data['sentAt'] != null
-                                        ? (data['sentAt'] as Timestamp)
-                                            .toDate()
-                                            .toString()
-                                        : '',
-                                    style: TextStyle(fontSize: 10),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Close'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'Sent',
-                  child: Text('Sent'),
-                ),
-                PopupMenuItem(
-                  value: 'Received',
-                  child: Text('Received'),
-                ),
-              ],
-            ),
-          ],
-        ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _messageController,
-                        decoration: InputDecoration(labelText: 'Message'),
-                        maxLines: 4,
-                      ),
-                      SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        items: _allUsers
-                            .map((u) => DropdownMenuItem<String>(
-                                  value: u['mobile'],
-                                  child: Text('${u['name'] ?? ''} (${u['mobile']})'),
-                                ))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null && !_selectedPhones.contains(val)) {
-                            setState(() {
-                              _selectedPhones.add(val);
-                            });
-                          }
-                        },
-                        decoration: InputDecoration(labelText: 'Mobile Number(s)'),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _selectedPhones
-                            .map((phone) {
-                              final user = _allUsers.firstWhere(
-                                (u) => u['mobile'] == phone,
-                                orElse: () => {},
-                              );
-                              final name = user['name'] ?? phone;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Broadcast Message'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert),
+            onSelected: (value) async {
+              if (value == 'Received') {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Received Notifications'),
+                    content: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _getLocalNotifications(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        }
+                        final notifications = snapshot.data ?? [];
+                        if (notifications.isEmpty) {
+                          return SizedBox.shrink();
+                        }
+                        return Container(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: notifications.length,
+                            itemBuilder: (context, index) {
+                              final data = notifications[index];
                               return ListTile(
-                                title: Text(name),
-                                subtitle: Text(phone),
-                                trailing: IconButton(
-                                  icon: Icon(Icons.close),
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedPhones.remove(phone);
-                                    });
-                                  },
+                                title: Text(data['title'] ?? ''),
+                                subtitle: Text(data['body'] ?? ''),
+                                trailing: Text(
+                                  data['receivedAt'] ?? '',
+                                  style: TextStyle(fontSize: 10),
                                 ),
                               );
-                            })
-                            .toList(),
-                      ),
-                      SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          _sendBroadcast();
-                        },
-                        child: Text('Broadcast'),
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Close'),
                       ),
                     ],
                   ),
+                );
+              } else if (value == 'Sent') {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Sent Notifications'),
+                    content: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('broadcasts')
+                          .orderBy('sentAt', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return Text('No sent notifications.');
+                        }
+                        final sent = snapshot.data!.docs;
+                        return Container(
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: sent.length,
+                            itemBuilder: (context, index) {
+                              final doc = sent[index];
+                              final data = doc.data() as Map<String, dynamic>;
+                              return ListTile(
+                                title: Text(data['message'] ?? ''),
+                                subtitle: Text('To: ${data['phone'] ?? ''}'),
+                                trailing: Text(
+                                  data['sentAt'] != null
+                                      ? (data['sentAt'] as Timestamp)
+                                            .toDate()
+                                            .toString()
+                                      : '',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Close'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 'Sent', child: Text('Sent')),
+              PopupMenuItem(value: 'Received', child: Text('Received')),
+            ],
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(labelText: 'Message'),
+                      maxLines: 4,
+                    ),
+                    SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      items: _allUsers
+                          .map(
+                            (u) => DropdownMenuItem<String>(
+                              value: u['mobile'],
+                              child: Text(
+                                '${u['name'] ?? ''} (${u['mobile']})',
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null && !_selectedPhones.contains(val)) {
+                          setState(() {
+                            _selectedPhones.add(val);
+                          });
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Mobile Number(s)',
+                      ),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _selectedPhones.map((phone) {
+                        final user = _allUsers.firstWhere(
+                          (u) => u['mobile'] == phone,
+                          orElse: () => {},
+                        );
+                        final name = user['name'] ?? phone;
+                        return ListTile(
+                          title: Text(name),
+                          subtitle: Text(phone),
+                          trailing: IconButton(
+                            icon: Icon(Icons.close),
+                            onPressed: () {
+                              setState(() {
+                                _selectedPhones.remove(phone);
+                              });
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        _sendBroadcast();
+                      },
+                      child: Text('Broadcast'),
+                    ),
+                  ],
                 ),
               ),
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  // Received Notifications Tab
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _getLocalNotifications(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                      final notifications = snapshot.data ?? [];
-                      if (notifications.isEmpty) {
-                        return Center(child: Text('No notifications received yet.'));
-                      }
-                      return ListView.builder(
-                        itemCount: notifications.length,
-                        itemBuilder: (context, index) {
-                          final data = notifications[index];
-                          return ListTile(
-                            title: Text(data['title'] ?? ''),
-                            subtitle: Text(data['body'] ?? ''),
-                            trailing: Text(
-                              data['receivedAt'] ?? '',
-                              style: TextStyle(fontSize: 10),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  // Sent Notifications Tab
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('broadcasts')
-                        .orderBy('sentAt', descending: true)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Center(child: Text('No sent notifications.'));
-                      }
-                      final sent = snapshot.data!.docs;
-                      return ListView.builder(
-                        itemCount: sent.length,
-                        itemBuilder: (context, index) {
-                          final doc = sent[index];
-                          final data = doc.data() as Map<String, dynamic>;
-                          return ListTile(
-                            title: Text(data['message'] ?? ''),
-                            subtitle: Text('To: ${data['phone'] ?? ''}'),
-                            trailing: Text(
-                              data['sentAt'] != null
-                                  ? (data['sentAt'] as Timestamp).toDate().toString()
-                                  : '',
-                              style: TextStyle(fontSize: 10),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

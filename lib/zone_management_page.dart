@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:plantation_summary/main.dart';
+import 'package:plantation_summary/firebase_config.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'dart:async';
 
 class ZoneManagementPage extends StatefulWidget {
   const ZoneManagementPage({Key? key}) : super(key: key);
@@ -301,14 +303,56 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
           SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
         );
       } else {
+        // Save image path locally for retry/queue
+        await FirebaseFirestore.instance.collection('plantation_records').add({
+          'name': _nameController.text.trim(),
+          'description': _descController.text.trim(),
+          'error': 'Image upload failed. Please try again later.',
+          'height': _heightController.text.trim(),
+          'biomass': _biomassController.text.trim(),
+          'specificLeafArea': _slaController.text.trim(),
+          'longevity': _longevityController.text.trim(),
+          'leafLitterQuality': _leafLitterQualityController.text.trim(),
+          'zoneId': widget.zoneId,
+          'zoneName': widget.zoneName,
+          'timestamp': DateTime.now().toIso8601String(),
+          'localImagePath': _pickedImage?.path,
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: ${response.statusCode}')),
+          SnackBar(content: Text('Image upload failed. Please try again later.')),
+        );
+        await FirebaseConfig.initialize();
+        await FirebaseConfig.logEvent(
+          eventType: 'image_upload_failed',
+          description: 'Image upload failed',
+          userId: _nameController.text.trim(),
+          details: {
+            'zoneId': widget.zoneId,
+            'zoneName': widget.zoneName,
+            'localImagePath': _pickedImage?.path,
+          },
+          collectionName: 'Register_Logs',
         );
       }
     } catch (e) {
+      // Save image path locally for retry/queue
+      await FirebaseFirestore.instance.collection('plantation_records').add({
+        'name': _nameController.text.trim(),
+        'description': _descController.text.trim(),
+        'error': 'Image upload failed. Please try again later.',
+        'height': _heightController.text.trim(),
+        'biomass': _biomassController.text.trim(),
+        'specificLeafArea': _slaController.text.trim(),
+        'longevity': _longevityController.text.trim(),
+        'leafLitterQuality': _leafLitterQualityController.text.trim(),
+        'zoneId': widget.zoneId,
+        'zoneName': widget.zoneName,
+        'timestamp': DateTime.now().toIso8601String(),
+        'localImagePath': _pickedImage?.path,
+      });
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
+      ).showSnackBar(SnackBar(content: Text('Image upload failed. Please try again later.')));
     }
   }
 
@@ -694,239 +738,207 @@ class PlantListPage extends StatelessWidget {
                               builder: (context, setState) {
                                 return AlertDialog(
                                   title: Text('Edit Plant'),
-                                  content: SingleChildScrollView(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        TextField(
-                                          controller: nameController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Plant Name',
-                                          ),
-                                        ),
-                                        TextField(
-                                          controller: descController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Description',
-                                          ),
-                                        ),
-                                        DropdownButtonFormField<String>(
-                                          value:
-                                              [
-                                                'Pest',
-                                                'Disease',
-                                                'Water Stress',
-                                                'Nutrient Deficiency',
-                                                'Physical Damage',
-                                                'Other',
-                                                'NA',
-                                              ].contains(errorController.text)
-                                              ? errorController.text
-                                              : null,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Issue',
-                                          ),
-                                          items:
-                                              [
-                                                    'Pest',
-                                                    'Disease',
-                                                    'Water Stress',
-                                                    'Nutrient Deficiency',
-                                                    'Physical Damage',
-                                                    'Other',
-                                                    'NA',
-                                                  ]
-                                                  .map(
-                                                    (issue) => DropdownMenuItem(
-                                                      value: issue,
-                                                      child: Text(issue),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                          onChanged: (value) {
-                                            errorController.text = value ?? '';
-                                          },
-                                        ),
-                                        TextField(
-                                          controller: heightController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Height',
-                                          ),
-                                        ),
-                                        TextField(
-                                          controller: biomassController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Biomass',
-                                          ),
-                                        ),
-                                        TextField(
-                                          controller: slaController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Specific Leaf Area',
-                                          ),
-                                        ),
-                                        TextField(
-                                          controller: longevityController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Longevity',
-                                          ),
-                                        ),
-                                        TextField(
-                                          controller:
-                                              leafLitterQualityController,
-                                          decoration: InputDecoration(
-                                            labelText: 'Leaf Litter Quality',
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                ElevatedButton(
-                                                  onPressed: () async {
-                                                    final ImagePicker picker =
-                                                        ImagePicker();
-                                                    final XFile? image =
-                                                        await picker.pickImage(
-                                                          source: ImageSource
-                                                              .gallery,
-                                                        );
-                                                    if (image != null) {
-                                                      setState(() {
-                                                        pickedImage = image;
-                                                      });
-                                                    }
-                                                  },
-                                                  child: const Text(
-                                                    'Pick Image',
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 16),
-                                                pickedImage != null
-                                                    ? SizedBox(
-                                                        width: 80,
-                                                        height: 80,
-                                                        child: Image.file(
-                                                          File(
-                                                            pickedImage!.path,
-                                                          ),
-                                                          fit: BoxFit.cover,
-                                                        ),
-                                                      )
-                                                    : (plantData['localImagePath'] !=
-                                                              null
-                                                          ? SizedBox(
-                                                              width: 80,
-                                                              height: 80,
-                                                              child: Image.file(
-                                                                File(
-                                                                  plantData['localImagePath'],
-                                                                ),
-                                                                fit: BoxFit
-                                                                    .cover,
-                                                              ),
-                                                            )
-                                                          : const Text(
-                                                              'No image selected',
-                                                            )),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            ElevatedButton(
-                                              onPressed: () async {
-                                                if (pickedImage == null) {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'No image selected',
-                                                      ),
-                                                    ),
-                                                  );
-                                                  return;
-                                                }
-                                                try {
-                                                  var request =
-                                                      http.MultipartRequest(
-                                                        'POST',
-                                                        Uri.parse(
-                                                          'http://80.225.203.181:8081/api/images/upload',
-                                                        ),
-                                                      );
-                                                  request.files.add(
-                                                    await http
-                                                        .MultipartFile.fromPath(
-                                                      'file',
-                                                      pickedImage!.path,
-                                                    ),
-                                                  );
-                                                  request.fields['userId'] =
-                                                      nameController.text
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? 'unknown'
-                                                      : nameController.text
-                                                            .trim();
-                                                  var response = await request
-                                                      .send();
-                                                  if (response.statusCode ==
-                                                      200) {
-                                                    final filename =
-                                                        pickedImage!.name;
-                                                    final userId =
-                                                        nameController.text
-                                                            .trim()
-                                                            .isEmpty
-                                                        ? 'unknown'
-                                                        : nameController.text
-                                                              .trim();
-                                                    final imageUrl =
-                                                        'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
-                                                          'Image uploaded! URL: $imageUrl',
-                                                        ),
-                                                      ),
-                                                    );
-                                                  } else {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
-                                                          'Upload failed: ${response.statusCode}',
-                                                        ),
-                                                      ),
-                                                    );
-                                                  }
-                                                } catch (e) {
-                                                  ScaffoldMessenger.of(
-                                                    context,
-                                                  ).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text(
-                                                        'Error uploading image: $e',
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                              child: const Text(
-                                                'Upload Image to Server',
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+content: SingleChildScrollView(
+child: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    const SizedBox(height: 16),
+    TextField(
+      controller: nameController,
+      decoration: InputDecoration(
+        labelText: 'Plant Name',
+      ),
+    ),
+    const SizedBox(height: 12),
+    TextField(
+      controller: descController,
+      decoration: InputDecoration(
+        labelText: 'Description',
+      ),
+    ),
+    const SizedBox(height: 12),
+    DropdownButtonFormField<String>(
+      value: [
+        'Pest',
+        'Disease',
+        'Water Stress',
+        'Nutrient Deficiency',
+        'Physical Damage',
+        'Other',
+        'NA',
+      ].contains(errorController.text)
+          ? errorController.text
+          : null,
+      decoration: const InputDecoration(
+        labelText: 'Issue',
+      ),
+      items: [
+        'Pest',
+        'Disease',
+        'Water Stress',
+        'Nutrient Deficiency',
+        'Physical Damage',
+        'Other',
+        'NA',
+      ]
+          .map(
+            (issue) => DropdownMenuItem(
+              value: issue,
+              child: Text(issue),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        errorController.text = value ?? '';
+      },
+    ),
+    const SizedBox(height: 12),
+    TextField(
+      controller: heightController,
+      decoration: InputDecoration(
+        labelText: 'Height',
+      ),
+    ),
+    const SizedBox(height: 12),
+    TextField(
+      controller: biomassController,
+      decoration: InputDecoration(
+        labelText: 'Biomass',
+      ),
+    ),
+    const SizedBox(height: 12),
+    TextField(
+      controller: slaController,
+      decoration: InputDecoration(
+        labelText: 'Specific Leaf Area',
+      ),
+    ),
+    const SizedBox(height: 12),
+    TextField(
+      controller: longevityController,
+      decoration: InputDecoration(
+        labelText: 'Longevity',
+      ),
+    ),
+    const SizedBox(height: 12),
+    TextField(
+      controller: leafLitterQualityController,
+      decoration: InputDecoration(
+        labelText: 'Leaf Litter Quality',
+      ),
+    ),
+    const SizedBox(height: 12),
+    // Image picker field
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            ElevatedButton(
+              onPressed: () async {
+                final ImagePicker picker = ImagePicker();
+                final XFile? image = await picker.pickImage(
+                  source: ImageSource.gallery,
+                );
+                if (image != null) {
+                  setState(() {
+                    pickedImage = image;
+                  });
+                }
+              },
+              child: const Text('Pick Image'),
+            ),
+            const SizedBox(width: 16),
+            pickedImage != null
+                ? SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: Image.file(
+                      File(pickedImage!.path),
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : (plantData['localImagePath'] != null
+                    ? SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Image.file(
+                          File(plantData['localImagePath']),
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : const Text('No image selected')),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ElevatedButton(
+          onPressed: () async {
+            if (pickedImage == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('No image selected'),
+                ),
+              );
+              return;
+            }
+            // Import dart:async for TimeoutException
+            try {
+              var request = http.MultipartRequest(
+                'POST',
+                Uri.parse('http://80.225.203.181:8081/api/images/upload'),
+              );
+              request.files.add(
+                await http.MultipartFile.fromPath(
+                  'file',
+                  pickedImage!.path,
+                ),
+              );
+              request.fields['userId'] = nameController.text.trim().isEmpty
+                  ? 'unknown'
+                  : nameController.text.trim();
+              var response;
+              try {
+                response = await request.send().timeout(const Duration(seconds: 10));
+              } on TimeoutException catch (_) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: Server not responding. Please try again later.')),
+                );
+                return;
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error uploading image: $e')),
+                );
+                return;
+              }
+              if (response != null && response.statusCode == 200) {
+                final filename = pickedImage!.name;
+                final userId = nameController.text.trim().isEmpty
+                    ? 'unknown'
+                    : nameController.text.trim();
+                final imageUrl =
+                    'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
+                );
+              } else if (response != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Upload failed: ${response.statusCode}'),
+                  ),
+                );
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error uploading image: $e')),
+              );
+            }
+          },
+          child: const Text('Upload Image to Server'),
+        ),
+      ],
+    ),
+  ],
+),
                                   ),
                                   actions: [
                                     TextButton(

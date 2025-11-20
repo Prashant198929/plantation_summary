@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'firebase_config.dart';
 
 class EditPlantationPage extends StatefulWidget {
   final String docId;
@@ -40,6 +41,16 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
           'error': _errorController.text,
           'timestamp': DateTime.now().toIso8601String(),
         });
+    await FirebaseConfig.logEvent(
+      eventType: 'plantation_updated',
+      description: 'Plantation record updated',
+      details: {
+        'docId': widget.docId,
+        'name': _nameController.text,
+        'description': _descriptionController.text,
+        'error': _errorController.text,
+      },
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Record updated successfully')),
     );
@@ -50,39 +61,54 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Plantation Record')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _errorController,
-                decoration: const InputDecoration(labelText: 'Error'),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                color: Colors.yellow.withOpacity(0.2),
-                child: _ImagePickerAndUploadSection(
-                  docId: widget.docId,
-                  nameController: _nameController,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Name',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _updateRecord,
-                child: const Text('Update'),
-              ),
-            ],
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _descriptionController,
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _errorController,
+                  decoration: InputDecoration(
+                    labelText: 'Error',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  color: Colors.yellow.withOpacity(0.2),
+                  child: _ImagePickerAndUploadSection(
+                    docId: widget.docId,
+                    nameController: _nameController,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _updateRecord,
+                  child: const Text('Update'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -154,14 +180,24 @@ class _ImagePickerAndUploadSectionState
           SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
         );
       } else {
+        // Save image path locally for retry/queue
+        await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
+          'localImagePath': _pickedImage!.path,
+          'error': 'Image upload failed. Please try again later.',
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: ${response.statusCode}')),
+          SnackBar(content: Text('Image upload failed. Please try again later.')),
         );
       }
     } catch (e) {
+      // Save image path locally for retry/queue
+      await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
+        'localImagePath': _pickedImage?.path,
+        'error': 'Image upload failed. Please try again later.',
+      });
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error uploading image: $e')));
+      ).showSnackBar(SnackBar(content: Text('Image upload failed. Please try again later.')));
     } finally {
       setState(() {
         _uploading = false;

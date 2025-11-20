@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:plantation_summary/main.dart';
+import 'dart:async';
+import 'firebase_config.dart';
 
 class PlantationListPage extends StatefulWidget {
   const PlantationListPage({Key? key}) : super(key: key);
@@ -104,7 +106,9 @@ class _PlantationListPageState extends State<PlantationListPage> {
                     final plant = plants[index];
                     final plantData = plant.data() as Map<String, dynamic>;
                     return ListTile(
-                      tileColor: plantData['error'] != null && plantData['error'] != 'NA'
+                      tileColor:
+                          plantData['error'] != null &&
+                              plantData['error'] != 'NA'
                           ? Colors.red[100]
                           : null,
                       title: Row(
@@ -115,48 +119,95 @@ class _PlantationListPageState extends State<PlantationListPage> {
                             ),
                           ),
                           ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
+                              await FirebaseConfig.logEvent(
+                                eventType: 'plantation_viewed',
+                                description: 'Plantation record viewed',
+                                details: {
+                                  'docId': plant.id,
+                                  'name': plantData['name'],
+                                  'zone': plantData['zoneName'],
+                                },
+                              );
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: Text(plantData['name'] ?? 'Plant Details'),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      if (plantData['zoneName'] != null)
-                                        Text('Zone: ${plantData['zoneName']}'),
-                                      if (plantData['description'] != null)
-                                        Text(
-                                          'Description: ${plantData['description']}',
-                                        ),
-                                      if (plantData['error'] != null)
-                                        Text('Issue: ${plantData['error']}'),
-                                      if (plantData['height'] != null)
-                                        Text('Height: ${plantData['height']}'),
-                                      if (plantData['biomass'] != null)
-                                        Text('Biomass: ${plantData['biomass']}'),
-                                      if (plantData['specificLeafArea'] != null)
-                                        Text(
-                                          'Specific Leaf Area: ${plantData['specificLeafArea']}',
-                                        ),
-                                      if (plantData['longevity'] != null)
-                                        Text('Longevity: ${plantData['longevity']}'),
-                                      if (plantData['leafLitterQuality'] != null)
-                                        Text(
-                                          'Leaf Litter Quality: ${plantData['leafLitterQuality']}',
-                                        ),
-                                      if (plantData['localImagePath'] != null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 8.0),
-                                          child: Image.file(
-                                            File(plantData['localImagePath']),
-                                            width: 80,
-                                            height: 80,
-                                            fit: BoxFit.cover,
+                                  title: Text(
+                                    plantData['name'] ?? 'Plant Details',
+                                  ),
+                                  content: SingleChildScrollView(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        if (plantData['description'] != null)
+                                          Text(
+                                            'Description: ${plantData['description']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                    ],
+                                        if (plantData['error'] != null)
+                                          Text(
+                                            'Issue: ${plantData['error']}',
+                                            style: TextStyle(
+                                              color: Colors.red[800],
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        if (plantData['height'] != null)
+                                          Text(
+                                            'Height: ${plantData['height']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['biomass'] != null)
+                                          Text(
+                                            'Biomass: ${plantData['biomass']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['specificLeafArea'] !=
+                                            null)
+                                          Text(
+                                            'Specific Leaf Area: ${plantData['specificLeafArea']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['longevity'] != null)
+                                          Text(
+                                            'Longevity: ${plantData['longevity']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['leafLitterQuality'] !=
+                                            null)
+                                          Text(
+                                            'Leaf Litter Quality: ${plantData['leafLitterQuality']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['localImagePath'] != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 8.0,
+                                            ),
+                                            child: Image.file(
+                                              File(plantData['localImagePath']),
+                                              width: 80,
+                                              height: 80,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                   actions: [
                                     TextButton(
@@ -188,9 +239,10 @@ class _PlantationListPageState extends State<PlantationListPage> {
                               final zoneController = TextEditingController(
                                 text: plantData['zoneName'] ?? '',
                               );
-                              final descriptionController = TextEditingController(
-                                text: plantData['description'] ?? '',
-                              );
+                              final descriptionController =
+                                  TextEditingController(
+                                    text: plantData['description'] ?? '',
+                                  );
                               final errorController = TextEditingController(
                                 text: plantData['error'] ?? '',
                               );
@@ -201,14 +253,17 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                 text: plantData['biomass']?.toString() ?? '',
                               );
                               final slaController = TextEditingController(
-                                text: plantData['specificLeafArea']?.toString() ?? '',
+                                text:
+                                    plantData['specificLeafArea']?.toString() ??
+                                    '',
                               );
                               final longevityController = TextEditingController(
                                 text: plantData['longevity']?.toString() ?? '',
                               );
-                              final leafLitterController = TextEditingController(
-                                text: plantData['leafLitterQuality'] ?? '',
-                              );
+                              final leafLitterController =
+                                  TextEditingController(
+                                    text: plantData['leafLitterQuality'] ?? '',
+                                  );
                               XFile? pickedImage;
 
                               await showDialog(
@@ -222,104 +277,340 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
+                                              const SizedBox(height: 16),
                                               TextField(
                                                 controller: nameController,
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Name',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(color: Colors.black87),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFF388E3C), width: 2),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 22),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
                                                 controller: zoneController,
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Zone',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
-                                                controller: descriptionController,
-                                                decoration: const InputDecoration(
+                                                controller:
+                                                    descriptionController,
+                                                decoration: InputDecoration(
                                                   labelText: 'Description',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               DropdownButtonFormField<String>(
-                                                value: [
-                                                  'Pest',
-                                                  'Disease',
-                                                  'Water Stress',
-                                                  'Nutrient Deficiency',
-                                                  'Physical Damage',
-                                                  'Other',
-                                                  'NA'
-                                                ].contains(errorController.text)
+                                                value:
+                                                    [
+                                                      'Pest',
+                                                      'Disease',
+                                                      'Water Stress',
+                                                      'Nutrient Deficiency',
+                                                      'Physical Damage',
+                                                      'Other',
+                                                      'NA',
+                                                    ].contains(
+                                                      errorController.text,
+                                                    )
                                                     ? errorController.text
                                                     : null,
-                                                decoration: const InputDecoration(labelText: 'Issue'),
-                                                items: [
-                                                  'Pest',
-                                                  'Disease',
-                                                  'Water Stress',
-                                                  'Nutrient Deficiency',
-                                                  'Physical Damage',
-                                                  'Other',
-                                                  'NA'
-                                                ]
-                                                    .map((issue) => DropdownMenuItem(
-                                                          value: issue,
-                                                          child: Text(issue),
-                                                        ))
-                                                    .toList(),
+                                                decoration: InputDecoration(
+                                                  labelText: 'Issue',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(color: Colors.black87),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFF388E3C), width: 2),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                                ),
+                                                items:
+                                                    [
+                                                          'Pest',
+                                                          'Disease',
+                                                          'Water Stress',
+                                                          'Nutrient Deficiency',
+                                                          'Physical Damage',
+                                                          'Other',
+                                                          'NA',
+                                                        ]
+                                                        .map(
+                                                          (issue) =>
+                                                              DropdownMenuItem(
+                                                                value: issue,
+                                                                child: Text(
+                                                                  issue,
+                                                                ),
+                                                              ),
+                                                        )
+                                                        .toList(),
                                                 onChanged: (value) {
-                                                  errorController.text = value ?? '';
+                                                  errorController.text =
+                                                      value ?? '';
                                                 },
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
                                                 controller: heightController,
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Height',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
                                                 controller: biomassController,
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Biomass',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
                                                 controller: slaController,
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Specific Leaf Area',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(color: Colors.black87),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFF388E3C), width: 2),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
                                                 controller: longevityController,
-                                                decoration: const InputDecoration(
+                                                decoration: InputDecoration(
                                                   labelText: 'Longevity',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
                                                 ),
                                               ),
+                                              const SizedBox(height: 16),
                                               TextField(
-                                                controller: leafLitterController,
-                                                decoration: const InputDecoration(
+                                                controller:
+                                                    leafLitterController,
+                                                decoration: InputDecoration(
                                                   labelText: 'Leaf Litter Quality',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(color: Colors.black87),
+                                                  enabledBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  focusedBorder: OutlineInputBorder(
+                                                    borderSide: BorderSide(color: Color(0xFF388E3C), width: 2),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                                 ),
                                               ),
                                               const SizedBox(height: 8),
                                               Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Row(
                                                     children: [
                                                       ElevatedButton(
                                                         onPressed: () async {
-                                                          final ImagePicker picker = ImagePicker();
-                                                          final XFile? image = await picker.pickImage(
-                                                            source: ImageSource.gallery,
-                                                          );
+                                                          final ImagePicker
+                                                          picker =
+                                                              ImagePicker();
+                                                          final XFile?
+                                                          image = await picker
+                                                              .pickImage(
+                                                                source:
+                                                                    ImageSource
+                                                                        .gallery,
+                                                              );
                                                           if (image != null) {
                                                             setState(() {
-                                                              pickedImage = image;
+                                                              pickedImage =
+                                                                  image;
                                                             });
                                                           }
                                                         },
-                                                        child: const Text('Pick Image'),
+                                                        child: const Text(
+                                                          'Pick Image',
+                                                        ),
                                                       ),
                                                       const SizedBox(width: 16),
                                                       pickedImage != null
@@ -327,111 +618,196 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                               width: 80,
                                                               height: 80,
                                                               child: Image.file(
-                                                                File(pickedImage!.path),
-                                                                fit: BoxFit.cover,
+                                                                File(
+                                                                  pickedImage!
+                                                                      .path,
+                                                                ),
+                                                                fit: BoxFit
+                                                                    .cover,
                                                               ),
                                                             )
-                                                          : (plantData['localImagePath'] != null
-                                                              ? SizedBox(
-                                                                  width: 80,
-                                                                  height: 80,
-                                                                  child: Image.file(
-                                                                    File(plantData['localImagePath']),
-                                                                    fit: BoxFit.cover,
-                                                                  ),
-                                                                )
-                                                              : const Text('No image selected')),
+                                                          : (plantData['localImagePath'] !=
+                                                                    null
+                                                                ? SizedBox(
+                                                                    width: 80,
+                                                                    height: 80,
+                                                                    child: Image.file(
+                                                                      File(
+                                                                        plantData['localImagePath'],
+                                                                      ),
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                    ),
+                                                                  )
+                                                                : const Text(
+                                                                    'No image selected',
+                                                                  )),
                                                     ],
                                                   ),
                                                 ],
                                               ),
                                               const SizedBox(height: 8),
-                                              ElevatedButton(
+ElevatedButton(
                                                 onPressed: () async {
-                                                if (pickedImage == null) {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (context) => AlertDialog(
-                                                      title: const Text('Upload Error'),
-                                                      content: const Text('No image selected'),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () => Navigator.pop(context),
-                                                          child: const Text('OK'),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                  return;
-                                                }
-                                                try {
-                                                  var request = http.MultipartRequest(
-                                                    'POST',
-                                                    Uri.parse(
-                                                      'http://80.225.203.181:8081/api/images/upload',
-                                                    ),
-                                                  );
-                                                  request.files.add(
-                                                    await http.MultipartFile.fromPath(
-                                                      'file',
-                                                      pickedImage!.path,
-                                                    ),
-                                                  );
-                                                  request.fields['userId'] =
-                                                      nameController.text.isEmpty
-                                                      ? 'unknown'
-                                                      : nameController.text;
-                                                  var response = await request.send();
-                                                  if (response.statusCode == 200) {
-                                                    final filename = pickedImage!.name;
-                                                    final userId = nameController.text.isEmpty
-                                                      ? 'unknown'
-                                                      : nameController.text;
-                                                    final imageUrl =
-                                                      'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
+                                                  if (pickedImage == null) {
                                                     showDialog(
                                                       context: context,
-                                                      builder: (context) => AlertDialog(
-                                                        title: const Text('Upload Successful'),
-                                                        content: Text('Image uploaded! URL: $imageUrl'),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
+                                                      builder: (context) =>
+                                                          AlertDialog(
+                                                            title: const Text(
+                                                              'Upload Error',
+                                                            ),
+                                                            content: const Text(
+                                                              'No image selected',
+                                                            ),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                    ),
+                                                                child:
+                                                                    const Text(
+                                                                      'OK',
+                                                                    ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                        ],
+                                                    );
+                                                    return;
+                                                  }
+                                                  try {
+                                                    var request =
+                                                        http.MultipartRequest(
+                                                          'POST',
+                                                          Uri.parse(
+                                                            'http://80.225.203.181:8081/api/images/upload',
+                                                          ),
+                                                        );
+                                                    request.files.add(
+                                                      await http
+                                                          .MultipartFile.fromPath(
+                                                        'file',
+                                                        pickedImage!.path,
                                                       ),
                                                     );
-                                                  } else {
+                                                    request.fields['userId'] =
+                                                        nameController
+                                                            .text
+                                                            .isEmpty
+                                                        ? 'unknown'
+                                                        : nameController.text;
+                                                    var response;
+                                                    try {
+                                                      response = await request.send().timeout(const Duration(seconds: 10));
+                                                    } on TimeoutException catch (_) {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text(
+                                                            'Upload Error',
+                                                          ),
+                                                          content: const Text(
+                                                            'Error: Server not responding. Please try again later.',
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context),
+                                                              child: const Text('OK'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                      return;
+                                                    } catch (e) {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text(
+                                                            'Upload Error',
+                                                          ),
+                                                          content: Text(
+                                                            'Error uploading image: $e',
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context),
+                                                              child: const Text('OK'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                      return;
+                                                    }
+                                                    if (response != null && response.statusCode == 200) {
+                                                      final filename = pickedImage!.name;
+                                                      final userId = nameController.text.isEmpty
+                                                          ? 'unknown'
+                                                          : nameController.text;
+                                                      final imageUrl =
+                                                          'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text(
+                                                            'Upload Successful',
+                                                          ),
+                                                          content: Text(
+                                                            'Image uploaded! URL: $imageUrl',
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context),
+                                                              child: const Text('OK'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    } else if (response != null) {
+                                                      showDialog(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          title: const Text(
+                                                            'Upload Failed',
+                                                          ),
+                                                          content: Text(
+                                                            'Upload failed: ${response.statusCode}',
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context),
+                                                              child: const Text('OK'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                                                    }
+                                                  } catch (e) {
                                                     showDialog(
                                                       context: context,
-                                                      builder: (context) => AlertDialog(
-                                                        title: const Text('Upload Failed'),
-                                                        content: Text('Upload failed: ${response.statusCode}'),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () => Navigator.pop(context),
-                                                            child: const Text('OK'),
+                                                      builder: (context) =>
+                                                          AlertDialog(
+                                                            title: const Text(
+                                                              'Upload Error',
+                                                            ),
+                                                            content: Text(
+                                                              'Error uploading image: $e',
+                                                            ),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                    ),
+                                                                child:
+                                                                    const Text(
+                                                                      'OK',
+                                                                    ),
+                                                              ),
+                                                            ],
                                                           ),
-                                                        ],
-                                                      ),
                                                     );
                                                   }
-                                                } catch (e) {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (context) => AlertDialog(
-                                                      title: const Text('Upload Error'),
-                                                      content: Text('Error uploading image: $e'),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () => Navigator.pop(context),
-                                                          child: const Text('OK'),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                }
                                                 },
                                                 child: const Text(
                                                   'Upload Image to Server',
@@ -442,22 +818,26 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(dialogContext),
+                                            onPressed: () =>
+                                                Navigator.pop(dialogContext),
                                             child: const Text('Cancel'),
                                           ),
                                           ElevatedButton(
                                             onPressed: () async {
-                                              Map<String, dynamic> updateData = {
+                                              Map<String, dynamic>
+                                              updateData = {
                                                 'name': nameController.text,
                                                 'zoneName': zoneController.text,
                                                 'description':
                                                     descriptionController.text,
                                                 'error': errorController.text,
                                                 'height': heightController.text,
-                                                'biomass': biomassController.text,
+                                                'biomass':
+                                                    biomassController.text,
                                                 'specificLeafArea':
                                                     slaController.text,
-                                                'longevity': longevityController.text,
+                                                'longevity':
+                                                    longevityController.text,
                                                 'leafLitterQuality':
                                                     leafLitterController.text,
                                               };
@@ -465,29 +845,61 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                 updateData['localImagePath'] =
                                                     pickedImage!.path;
                                               }
-                                              print('DEBUG: Update data: $updateData');
+                                              print(
+                                                'DEBUG: Update data: $updateData',
+                                              );
                                               try {
                                                 await FirebaseFirestore.instance
-                                                    .collection('plantation_records')
+                                                    .collection(
+                                                      'plantation_records',
+                                                    )
                                                     .doc(docId)
                                                     .update(updateData);
-                                                print('DEBUG: Firestore update successful');
-                                                Navigator.of(dialogContext).pop(); // Close edit dialog
+                                                await FirebaseConfig.logEvent(
+                                                  eventType: 'plantation_updated',
+                                                  description: 'Plantation record updated from list',
+                                                  details: {
+                                                    'docId': docId,
+                                                    'name': nameController.text,
+                                                    'zone': zoneController.text,
+                                                    'description': descriptionController.text,
+                                                    'error': errorController.text,
+                                                  },
+                                                );
+                                                print(
+                                                  'DEBUG: Firestore update successful',
+                                                );
+                                                Navigator.of(
+                                                  dialogContext,
+                                                ).pop(); // Close edit dialog
                                                 print('DEBUG: Dialog closed');
                                                 Future.microtask(() {
-                                                  print('DEBUG: Showing SnackBar');
-                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                  print(
+                                                    'DEBUG: Showing SnackBar',
+                                                  );
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
                                                     const SnackBar(
-                                                      content: Text('Record updated successfully.'),
-                                                      backgroundColor: Colors.green,
+                                                      content: Text(
+                                                        'Record updated successfully.',
+                                                      ),
+                                                      backgroundColor:
+                                                          Colors.green,
                                                     ),
                                                   );
                                                 });
                                               } catch (e) {
-                                                print('DEBUG: Firestore update error: $e');
-                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                print(
+                                                  'DEBUG: Firestore update error: $e',
+                                                );
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
                                                   SnackBar(
-                                                    content: Text('Error updating record: $e'),
+                                                    content: Text(
+                                                      'Error updating record: $e',
+                                                    ),
                                                     backgroundColor: Colors.red,
                                                   ),
                                                 );

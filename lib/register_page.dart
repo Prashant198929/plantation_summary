@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_config.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -16,6 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _baithakNoController = TextEditingController();
   final TextEditingController _baithakPlaceController = TextEditingController();
   final TextEditingController _zoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   Map<String, String> _errors = {};
@@ -34,6 +37,8 @@ class _RegisterPageState extends State<RegisterPage> {
     final numeric = RegExp(r'(\d+)$').firstMatch(value.trim());
     return numeric != null;
   }
+  bool _validateEmail(String value) =>
+      RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim());
   bool _validatePassword(String value) =>
       RegExp(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$')
           .hasMatch(value);
@@ -45,6 +50,7 @@ class _RegisterPageState extends State<RegisterPage> {
     String baithakNo = _baithakNoController.text.trim();
     String baithakPlace = _baithakPlaceController.text.trim();
     String zone = _zoneController.text.trim();
+    String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
     Map<String, String> errors = {};
@@ -67,6 +73,9 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_validateZone(zone)) {
       errors['zone'] = 'Zone should be numeric';
     }
+    if (!_validateEmail(email)) {
+      errors['email'] = 'Enter a valid email address';
+    }
     if (!_validatePassword(password)) {
       errors['password'] =
           'Password must be at least 8 characters, include a letter, number, and special character';
@@ -78,6 +87,22 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (errors.isNotEmpty) return;
 
+    // Register user with Firebase Auth
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      setState(() {
+        _errors['email'] = 'Email registration failed: ${e.toString()}';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Email registration failed: ${e.toString()}')),
+      );
+      return;
+    }
+
     final query = await FirebaseFirestore.instance
         .collection('users')
         .where('mobile', isEqualTo: mobile)
@@ -86,6 +111,12 @@ class _RegisterPageState extends State<RegisterPage> {
     if (query.docs.isNotEmpty) {
       setState(() {
         _errors['mobile'] = 'Mobile number already registered';
+      });
+      await FirebaseFirestore.instance.collection('vrukshamojaniattendancelogs').add({
+        'mobile': mobile,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'failed',
+        'reason': 'Mobile number already registered',
       });
       return;
     }
@@ -99,12 +130,32 @@ class _RegisterPageState extends State<RegisterPage> {
         'baithakNo': baithakNo,
         'baithakPlace': baithakPlace,
         'zone': zone,
+        'email': email,
         'password': password,
         'fcmToken': fcmToken,
         'role': 'user',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
+      await FirebaseFirestore.instance.collection('vrukshamojaniattendancelogs').add({
+        'mobile': mobile,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'success',
+      });
+
+      await FirebaseConfig.logEvent(
+        eventType: 'register_success',
+        description: 'User registered successfully',
+        userId: mobile,
+        details: {
+          'name': name,
+          'surname': surname,
+          'baithakNo': baithakNo,
+          'baithakPlace': baithakPlace,
+          'zone': zone,
+          'email': email,
+        },
+      );
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Registered successfully')));
@@ -113,9 +164,25 @@ class _RegisterPageState extends State<RegisterPage> {
       _mobileController.clear();
       _baithakNoController.clear();
       _baithakPlaceController.clear();
+      _zoneController.clear();
+      _emailController.clear();
       _passwordController.clear();
       Navigator.pop(context);
     } catch (e) {
+      await FirebaseConfig.logEvent(
+        eventType: 'register_failed',
+        description: 'User registration failed',
+        userId: mobile,
+        details: {
+          'error': e.toString(),
+          'name': name,
+          'surname': surname,
+          'baithakNo': baithakNo,
+          'baithakPlace': baithakPlace,
+          'zone': zone,
+          'email': email,
+        },
+      );
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -250,6 +317,26 @@ class _RegisterPageState extends State<RegisterPage> {
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Text(_errors['zone']!, style: TextStyle(color: Colors.red)),
+                ),
+              SizedBox(height: 12),
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(labelText: 'Email'),
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (val) {
+                  setState(() {
+                    if (!_validateEmail(val)) {
+                      _errors['email'] = 'Enter a valid email address';
+                    } else {
+                      _errors.remove('email');
+                    }
+                  });
+                },
+              ),
+              if (_errors['email'] != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(_errors['email']!, style: TextStyle(color: Colors.red)),
                 ),
               SizedBox(height: 12),
               TextField(

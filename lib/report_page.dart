@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'firebase_config.dart';
 
 class ReportPage extends StatelessWidget {
   const ReportPage({Key? key}) : super(key: key);
@@ -36,6 +37,14 @@ class ReportPage extends StatelessWidget {
                 final query = await FirebaseFirestore.instance.collection('plantation_records').get();
                 final plants = query.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
                 await _generateAndSaveExcel(plants, context, fileName: 'all_plants_report.xlsx');
+                await FirebaseConfig.logEvent(
+                  eventType: 'report_generated',
+                  description: 'All Plants Report generated',
+                  details: {
+                    'timestamp': DateTime.now().toIso8601String(),
+                    'type': 'all_plants',
+                  },
+                );
               },
               child: const Text('All Plants Report'),
             ),
@@ -121,6 +130,15 @@ class _ZoneSelectionDialogState extends State<_ZoneSelectionDialog> {
             }
             // Generate Excel
             await _generateAndSaveExcel(plants, context);
+            await FirebaseConfig.logEvent(
+              eventType: 'report_generated',
+              description: 'Zone Wise Report generated',
+              details: {
+                'timestamp': DateTime.now().toIso8601String(),
+                'type': 'zone_wise',
+                'zones': _selectedZones.toList(),
+              },
+            );
             Navigator.pop(context, _selectedZones.toList());
           },
           child: const Text('Generate Report'),
