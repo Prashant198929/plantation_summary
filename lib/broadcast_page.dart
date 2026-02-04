@@ -44,6 +44,13 @@ class _BroadcastPageState extends State<BroadcastPage> {
     super.initState();
     _getRegistrationToken();
     _fetchAllUsers();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'broadcast_page_opened',
+        description: 'Broadcast page opened',
+        userId: loggedInMobile,
+      );
+    });
   }
 
   Future<void> _fetchAllUsers() async {
@@ -95,72 +102,124 @@ class _BroadcastPageState extends State<BroadcastPage> {
   }
 
   Future<void> _sendBroadcast() async {
-    String message = _messageController.text.trim();
+    final String message = _messageController.text.trim();
 
     if (message.isEmpty || _selectedPhones.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Please enter message and select at least one device'),
         ),
       );
       return;
     }
 
+    int successCount = 0;
+    int failureCount = 0;
+    final List<String> failedPhones = [];
+
     for (final phone in _selectedPhones) {
       final user = _allUsers.firstWhere(
         (u) => u['mobile'] == phone,
-        orElse: () => {},
+        orElse: () => <String, dynamic>{},
       );
-      String? targetToken = user['fcmToken'];
-      if (targetToken != null && targetToken.isNotEmpty) {
+      final String? targetToken = (user['fcmToken'] is String) ? user['fcmToken'] as String : null;
+      if (targetToken == null || targetToken.isEmpty) {
+        failureCount++;
+        failedPhones.add(phone);
+        // Also log missing token for diagnostics
+        try {
+          await FirebaseFirestore.instance.collection('broadcasts').add({
+            'message': message,
+            'phone': phone,
+            'sentAt': FieldValue.serverTimestamp(),
+            'registrationToken': null,
+            'status': 'missing_token',
+          });
+        } catch (_) {}
+        continue;
+      }
+
+      try {
+        final accessToken = await _fetchAccessToken();
+        debugPrint('Using access token: $accessToken');
+        const String projectId = 'vrukshamojani-4ffd6';
+        final url = Uri.parse('https://fcm.googleapis.com/v1/projects/$projectId/messages:send');
+        final headers = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        };
+        final body = jsonEncode({
+          'message': {
+            'token': targetToken,
+            'notification': {'title': 'Broadcast Message', 'body': message},
+            'data': {'phone': phone},
+          },
+        });
+
+        debugPrint('FCM JSON request: $body');
+        final response = await http.post(url, headers: headers, body: body).timeout(const Duration(seconds: 10));
+        debugPrint('FCM JSON response: ${response.statusCode} ${response.body}');
+
+        // Log attempt result in Firestore
         await FirebaseFirestore.instance.collection('broadcasts').add({
           'message': message,
           'phone': phone,
           'sentAt': FieldValue.serverTimestamp(),
           'registrationToken': targetToken,
+          'statusCode': response.statusCode,
+          'responseBody': response.body,
         });
 
-        try {
-          final accessToken = await _fetchAccessToken();
-          debugPrint('Using access token: $accessToken');
-          const String projectId = 'vrukshamojani-4ffd6';
-          final url = Uri.parse(
-            'https://fcm.googleapis.com/v1/projects/$projectId/messages:send',
-          );
-          final headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $accessToken',
-          };
-          final body = jsonEncode({
-            'message': {
-              'token': targetToken,
-              'notification': {'title': 'Broadcast Message', 'body': message},
-              'data': {'phone': phone},
-            },
-          });
-
-          print('FCM JSON request: $body');
-          debugPrint('FCM JSON request: $body');
-          final response = await http.post(url, headers: headers, body: body);
-          print('FCM JSON response: $response');
-          debugPrint('FCM JSON response: $response');
-        } catch (e) {
-          debugPrint('Error sending push notification: $e');
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          successCount++;
+        } else {
+          failureCount++;
+          failedPhones.add(phone);
         }
+      } on Exception catch (e) {
+        debugPrint('Error sending push notification: $e');
+        failureCount++;
+        failedPhones.add(phone);
+        // Log the failure in Firestore for diagnostics
+        try {
+          await FirebaseFirestore.instance.collection('broadcasts').add({
+            'message': message,
+            'phone': phone,
+            'sentAt': FieldValue.serverTimestamp(),
+            'registrationToken': targetToken,
+            'status': 'error',
+            'error': e.toString(),
+          });
+        } catch (_) {}
       }
     }
 
     await FirebaseConfig.logEvent(
-      eventType: 'broadcast_sent',
-      description: 'Broadcast sent to selected devices',
+      eventType: 'broadcast_send_attempt',
+      description: 'Attempted to send broadcast to selected devices',
       details: {
         'message': message,
-        'phones': _selectedPhones,
+        'attemptedPhones': _selectedPhones,
+        'successCount': successCount,
+        'failureCount': failureCount,
+        'failedPhones': failedPhones,
       },
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Broadcast sent to selected devices')),
-    );
+
+    // Show accurate outcome
+    if (successCount > 0 && failureCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Broadcast sent to $successCount device(s).')),
+      );
+    } else if (successCount > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Broadcast sent to $successCount device(s). $failureCount failed.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send broadcast to selected devices.')),
+      );
+    }
 
     _messageController.clear();
     setState(() {
@@ -177,6 +236,12 @@ class _BroadcastPageState extends State<BroadcastPage> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert),
             onSelected: (value) async {
+              await FirebaseConfig.logEvent(
+                eventType: 'broadcast_menu_selected',
+                description: 'Broadcast menu selected',
+                userId: loggedInMobile,
+                details: {'menu': value},
+              );
               if (value == 'Received') {
                 showDialog(
                   context: context,
@@ -215,7 +280,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () async {
+                          await FirebaseConfig.logEvent(
+                            eventType: 'broadcast_received_closed',
+                            description: 'Broadcast received dialog closed',
+                            userId: loggedInMobile,
+                          );
+                          Navigator.pop(context);
+                        },
                         child: Text('Close'),
                       ),
                     ],
@@ -267,7 +339,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () async {
+                          await FirebaseConfig.logEvent(
+                            eventType: 'broadcast_sent_closed',
+                            description: 'Broadcast sent dialog closed',
+                            userId: loggedInMobile,
+                          );
+                          Navigator.pop(context);
+                        },
                         child: Text('Close'),
                       ),
                     ],
@@ -314,6 +393,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
                           setState(() {
                             _selectedPhones.add(val);
                           });
+                          Future.microtask(() async {
+                            await FirebaseConfig.logEvent(
+                              eventType: 'broadcast_phone_added',
+                              description: 'Broadcast phone added',
+                              userId: loggedInMobile,
+                              details: {'phone': val},
+                            );
+                          });
                         }
                       },
                       decoration: InputDecoration(
@@ -333,7 +420,13 @@ class _BroadcastPageState extends State<BroadcastPage> {
                           subtitle: Text(phone),
                           trailing: IconButton(
                             icon: Icon(Icons.close),
-                            onPressed: () {
+                            onPressed: () async {
+                              await FirebaseConfig.logEvent(
+                                eventType: 'broadcast_phone_removed',
+                                description: 'Broadcast phone removed',
+                                userId: loggedInMobile,
+                                details: {'phone': phone},
+                              );
                               setState(() {
                                 _selectedPhones.remove(phone);
                               });
@@ -344,7 +437,13 @@ class _BroadcastPageState extends State<BroadcastPage> {
                     ),
                     SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        await FirebaseConfig.logEvent(
+                          eventType: 'broadcast_send_clicked',
+                          description: 'Broadcast send clicked',
+                          userId: loggedInMobile,
+                          details: {'selectedPhones': _selectedPhones},
+                        );
                         _sendBroadcast();
                       },
                       child: Text('Broadcast'),

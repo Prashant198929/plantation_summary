@@ -23,6 +23,13 @@ class _PlantationListPageState extends State<PlantationListPage> {
   void initState() {
     super.initState();
     _fetchUserZone();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'plantation_list_opened',
+        description: 'Plantation list page opened',
+        userId: loggedInMobile,
+      );
+    });
   }
 
   Future<void> _fetchUserZone() async {
@@ -78,6 +85,15 @@ class _PlantationListPageState extends State<PlantationListPage> {
               Tab(text: 'All Records'),
               Tab(text: 'Other'),
             ],
+            onTap: (index) async {
+              const tabs = ['All Records', 'Other'];
+              await FirebaseConfig.logEvent(
+                eventType: 'plantation_tab_clicked',
+                description: 'Plantation tab clicked',
+                userId: loggedInMobile,
+                details: {'tab': tabs[index]},
+              );
+            },
           ),
         ),
         body: TabBarView(
@@ -143,7 +159,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                       children: [
                                         if (plantData['description'] != null)
                                           Text(
-                                            'Description: ${plantData['description']}',
+                                            'Plant Number: ${plantData['description']}',
                                             style: TextStyle(
                                               color: Colors.black87,
                                               fontWeight: FontWeight.w500,
@@ -211,7 +227,15 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                   ),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(context),
+                                      onPressed: () async {
+                                        await FirebaseConfig.logEvent(
+                                          eventType: 'plantation_details_closed',
+                                          description: 'Plantation details closed',
+                                          userId: loggedInMobile,
+                                          details: {'docId': plant.id},
+                                        );
+                                        Navigator.pop(context);
+                                      },
                                       child: const Text('Close'),
                                     ),
                                   ],
@@ -223,6 +247,16 @@ class _PlantationListPageState extends State<PlantationListPage> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: () async {
+                              await FirebaseConfig.logEvent(
+                                eventType: 'plantation_edit_clicked',
+                                description: 'Plantation edit clicked',
+                                userId: loggedInMobile,
+                                details: {
+                                  'docId': plant.id,
+                                  'name': plantData['name'],
+                                  'zone': plantData['zoneName'],
+                                },
+                              );
                               if (!isSuperAdmin) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -239,6 +273,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                               final zoneController = TextEditingController(
                                 text: plantData['zoneName'] ?? '',
                               );
+                              String? selectedZoneId = plantData['zoneId'];
                               final descriptionController =
                                   TextEditingController(
                                     text: plantData['description'] ?? '',
@@ -264,6 +299,8 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                   TextEditingController(
                                     text: plantData['leafLitterQuality'] ?? '',
                                   );
+                              final originalData =
+                                  Map<String, dynamic>.from(plantData);
                               XFile? pickedImage;
 
                               await showDialog(
@@ -297,49 +334,70 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
-                                              TextField(
-                                                controller: zoneController,
-                                                decoration: InputDecoration(
-                                                  labelText: 'Zone',
-                                                  fillColor: Color(0xFFE8F5E9),
-                                                  filled: true,
-                                                  labelStyle: TextStyle(
-                                                    color: Colors.black87,
-                                                  ),
-                                                  enabledBorder:
-                                                      OutlineInputBorder(
-                                                        borderSide: BorderSide(
-                                                          color: Color(
-                                                            0xFFFFB300,
-                                                          ),
-                                                          width: 1.5,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
-                                                            ),
+                                              FutureBuilder<QuerySnapshot>(
+                                                future: FirebaseFirestore.instance.collection('zones').get(),
+                                                builder: (context, zoneSnapshot) {
+                                                  if (!zoneSnapshot.hasData) {
+                                                    return CircularProgressIndicator();
+                                                  }
+                                                  final zones = zoneSnapshot.data!.docs;
+                                                  return DropdownButtonFormField<String>(
+                                                    value: selectedZoneId,
+                                                    decoration: InputDecoration(
+                                                      labelText: 'Zone',
+                                                      fillColor: Color(0xFFE8F5E9),
+                                                      filled: true,
+                                                      labelStyle: TextStyle(
+                                                        color: Colors.black87,
                                                       ),
-                                                  focusedBorder:
-                                                      OutlineInputBorder(
-                                                        borderSide: BorderSide(
-                                                          color: Color(
-                                                            0xFF388E3C,
-                                                          ),
-                                                          width: 2,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              8,
+                                                      enabledBorder:
+                                                          OutlineInputBorder(
+                                                            borderSide: BorderSide(
+                                                              color: Color(
+                                                                0xFFFFB300,
+                                                              ),
+                                                              width: 1.5,
                                                             ),
-                                                      ),
-                                                ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                      focusedBorder:
+                                                          OutlineInputBorder(
+                                                            borderSide: BorderSide(
+                                                              color: Color(
+                                                                0xFF388E3C,
+                                                              ),
+                                                              width: 2,
+                                                            ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                    ),
+                                                    items: zones.map((zone) {
+                                                      return DropdownMenuItem<String>(
+                                                        value: zone.id,
+                                                        child: Text(zone['name']),
+                                                      );
+                                                    }).toList(),
+                                                    onChanged: (value) {
+                                                      setState(() {
+                                                        selectedZoneId = value;
+                                                        zoneController.text = zones.firstWhere((z) => z.id == value)['name'];
+                                                      });
+                                                    },
+                                                  );
+                                                },
                                               ),
                                               const SizedBox(height: 16),
                                               TextField(
                                                 controller:
                                                     descriptionController,
                                                 decoration: InputDecoration(
-                                                  labelText: 'Description',
+                                                  labelText: 'Plant Number',
                                                   fillColor: Color(0xFFE8F5E9),
                                                   filled: true,
                                                   labelStyle: TextStyle(
@@ -591,6 +649,12 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                     children: [
                                                       ElevatedButton(
                                                         onPressed: () async {
+                                                          await FirebaseConfig.logEvent(
+                                                            eventType: 'plantation_edit_pick_image',
+                                                            description: 'Plantation edit pick image',
+                                                            userId: loggedInMobile,
+                                                            details: {'docId': plant.id},
+                                                          );
                                                           final ImagePicker
                                                           picker =
                                                               ImagePicker();
@@ -649,6 +713,12 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                               const SizedBox(height: 8),
 ElevatedButton(
                                                 onPressed: () async {
+                                                  await FirebaseConfig.logEvent(
+                                                    eventType: 'plantation_edit_upload_clicked',
+                                                    description: 'Plantation edit upload clicked',
+                                                    userId: loggedInMobile,
+                                                    details: {'docId': plant.id},
+                                                  );
                                                   if (pickedImage == null) {
                                                     showDialog(
                                                       context: context,
@@ -818,15 +888,29 @@ ElevatedButton(
                                         ),
                                         actions: [
                                           TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(dialogContext),
+                                            onPressed: () async {
+                                              await FirebaseConfig.logEvent(
+                                                eventType: 'plantation_edit_cancelled',
+                                                description: 'Plantation edit cancelled',
+                                                userId: loggedInMobile,
+                                                details: {'docId': docId},
+                                              );
+                                              Navigator.pop(dialogContext);
+                                            },
                                             child: const Text('Cancel'),
                                           ),
                                           ElevatedButton(
                                             onPressed: () async {
+                                              await FirebaseConfig.logEvent(
+                                                eventType: 'plantation_edit_saved',
+                                                description: 'Plantation edit saved',
+                                                userId: loggedInMobile,
+                                                details: {'docId': docId},
+                                              );
                                               Map<String, dynamic>
                                               updateData = {
                                                 'name': nameController.text,
+                                                'zoneId': selectedZoneId,
                                                 'zoneName': zoneController.text,
                                                 'description':
                                                     descriptionController.text,
@@ -849,6 +933,16 @@ ElevatedButton(
                                                 'DEBUG: Update data: $updateData',
                                               );
                                               try {
+                                                final historicalData =
+                                                    Map<String, dynamic>.from(originalData);
+                                                historicalData['originalId'] =
+                                                    docId;
+                                                historicalData['editedAt'] =
+                                                    DateTime.now().toIso8601String();
+                                                await FirebaseFirestore.instance
+                                                    .collection('HistoricalData')
+                                                    .add(historicalData);
+
                                                 await FirebaseFirestore.instance
                                                     .collection(
                                                       'plantation_records',

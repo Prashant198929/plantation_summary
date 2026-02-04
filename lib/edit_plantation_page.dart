@@ -25,6 +25,13 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.data['name'] ?? '');
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'edit_plantation_opened',
+        description: 'Edit plantation page opened',
+        details: {'docId': widget.docId},
+      );
+    });
     _descriptionController = TextEditingController(
       text: widget.data['description'] ?? '',
     );
@@ -32,6 +39,11 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
   }
 
   Future<void> _updateRecord() async {
+    await FirebaseConfig.logEvent(
+      eventType: 'edit_plantation_update_clicked',
+      description: 'Edit plantation update clicked',
+      details: {'docId': widget.docId},
+    );
     await FirebaseFirestore.instance
         .collection('plantation_records')
         .doc(widget.docId)
@@ -80,7 +92,7 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
                 TextField(
                   controller: _descriptionController,
                   decoration: InputDecoration(
-                    labelText: 'Description',
+                    labelText: 'Plant Number',
                     fillColor: Colors.white,
                     filled: true,
                   ),
@@ -213,7 +225,14 @@ class _ImagePickerAndUploadSectionState
         Row(
           children: [
             ElevatedButton(
-              onPressed: _pickImage,
+              onPressed: () async {
+                await FirebaseConfig.logEvent(
+                  eventType: 'edit_plantation_pick_image',
+                  description: 'Edit plantation pick image',
+                  details: {'docId': widget.docId},
+                );
+                _pickImage();
+              },
               child: const Text('Pick Image'),
             ),
             const SizedBox(width: 16),
@@ -231,7 +250,16 @@ class _ImagePickerAndUploadSectionState
         ),
         const SizedBox(height: 8),
         ElevatedButton(
-          onPressed: _uploading ? null : _uploadImageToServer,
+          onPressed: _uploading
+              ? null
+              : () async {
+                  await FirebaseConfig.logEvent(
+                    eventType: 'edit_plantation_upload_clicked',
+                    description: 'Edit plantation upload clicked',
+                    details: {'docId': widget.docId},
+                  );
+                  _uploadImageToServer();
+                },
           child: _uploading
               ? const Text('Uploading...')
               : const Text('Upload Image to Server'),

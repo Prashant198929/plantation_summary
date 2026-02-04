@@ -21,11 +21,23 @@ class ReportsFilterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'reports_filter_opened',
+        description: 'Reports filter opened',
+      );
+    });
     return Scaffold(
       appBar: AppBar(title: Text('Reports Filter')),
       body: Center(
         child: ElevatedButton(
-          onPressed: () => _generateReport(context),
+          onPressed: () async {
+            await FirebaseConfig.logEvent(
+              eventType: 'reports_filter_generate_clicked',
+              description: 'Reports filter generate clicked',
+            );
+            _generateReport(context);
+          },
           child: Text('Generate Report'),
         ),
       ),

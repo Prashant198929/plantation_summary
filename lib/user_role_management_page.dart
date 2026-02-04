@@ -10,7 +10,18 @@ class UserRoleManagementPage extends StatefulWidget {
 }
 
 class _UserRoleManagementPageState extends State<UserRoleManagementPage> {
-final List<String> mainRoles = ['super_admin', 'admin', 'user'];
+  final List<String> mainRoles = ['super_admin', 'admin', 'user'];
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'user_role_page_opened',
+        description: 'User role management page opened',
+      );
+    });
+  }
   void _updateUserRole(String userId, String newRole) async {
     await FirebaseFirestore.instance.collection('users').doc(userId).update({'role': newRole});
     await FirebaseConfig.logEvent(
@@ -166,6 +177,14 @@ class _UserRoleCardState extends State<_UserRoleCard> {
                         setState(() {
                           selectedMainRole = val!;
                         });
+                        Future.microtask(() async {
+                          await FirebaseConfig.logEvent(
+                            eventType: 'role_radio_selected',
+                            description: 'Role radio selected',
+                            userId: widget.userId,
+                            details: {'selectedRole': selectedMainRole},
+                          );
+                        });
                       },
                     ),
                     Text(role.replaceAll('_', ' ').toUpperCase()),
@@ -180,6 +199,16 @@ class _UserRoleCardState extends State<_UserRoleCard> {
                         setState(() {
                           attendanceViewerChecked = checked ?? false;
                         });
+                        Future.microtask(() async {
+                          await FirebaseConfig.logEvent(
+                            eventType: 'attendance_viewer_toggled',
+                            description: 'Attendance viewer toggled',
+                            userId: widget.userId,
+                            details: {
+                              'attendanceViewer': attendanceViewerChecked,
+                            },
+                          );
+                        });
                       },
                     ),
                     Text('ATTENDANCE VIEWER'),
@@ -193,15 +222,27 @@ class _UserRoleCardState extends State<_UserRoleCard> {
               children: [
                 ElevatedButton(
                   onPressed: () async {
+                    await FirebaseConfig.logEvent(
+                      eventType: 'role_save_clicked',
+                      description: 'Role save clicked',
+                      userId: widget.userId,
+                      details: {
+                        'selectedRole': selectedMainRole,
+                        'attendanceViewer': attendanceViewerChecked,
+                      },
+                    );
                     bool changed = false;
-if (selectedMainRole != widget.currentRole) {
-  widget.onUpdateRole(widget.userId, selectedMainRole);
-  changed = true;
-}
-if (attendanceViewerChecked != widget.attendanceViewer) {
-  widget.onUpdateAttendanceViewer(widget.userId, attendanceViewerChecked);
-  changed = true;
-}
+                    if (selectedMainRole != widget.currentRole) {
+                      widget.onUpdateRole(widget.userId, selectedMainRole);
+                      changed = true;
+                    }
+                    if (attendanceViewerChecked != widget.attendanceViewer) {
+                      widget.onUpdateAttendanceViewer(
+                        widget.userId,
+                        attendanceViewerChecked,
+                      );
+                      changed = true;
+                    }
                     if (changed) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Role(s) updated')),
@@ -213,7 +254,12 @@ if (attendanceViewerChecked != widget.attendanceViewer) {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
+                  onPressed: () async {
+                    await FirebaseConfig.logEvent(
+                      eventType: 'user_delete_clicked',
+                      description: 'User delete clicked',
+                      userId: widget.userId,
+                    );
                     widget.onDelete(widget.userId);
                   },
                 ),

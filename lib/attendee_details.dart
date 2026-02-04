@@ -37,6 +37,18 @@ class _AttendeeDetailsState extends State<AttendeeDetails> {
   void initState() {
     super.initState();
     fetchAttendees();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'attendee_details_opened',
+        description: 'Attendee details opened',
+        details: {
+          'year': widget.year,
+          'month': widget.month,
+          'place': widget.place,
+          'zone': widget.zone,
+        },
+      );
+    });
   }
 
   Future<void> fetchAttendees() async {
@@ -222,13 +234,27 @@ class _PaginatedAttendeeListState extends State<_PaginatedAttendeeList> {
             IconButton(
               icon: Icon(Icons.chevron_left),
               onPressed: page > 0
-                  ? () => setState(() => page--)
+                  ? () async {
+                      await FirebaseConfig.logEvent(
+                        eventType: 'attendee_page_prev',
+                        description: 'Attendee page previous',
+                        details: {'page': page},
+                      );
+                      setState(() => page--);
+                    }
                   : null,
             ),
             IconButton(
               icon: Icon(Icons.chevron_right),
               onPressed: page < totalPages - 1
-                  ? () => setState(() => page++)
+                  ? () async {
+                      await FirebaseConfig.logEvent(
+                        eventType: 'attendee_page_next',
+                        description: 'Attendee page next',
+                        details: {'page': page},
+                      );
+                      setState(() => page++);
+                    }
                   : null,
             ),
           ],
@@ -241,6 +267,11 @@ class _PaginatedAttendeeListState extends State<_PaginatedAttendeeList> {
             onPressed: widget.records.isEmpty
                 ? null
                 : () async {
+                    await FirebaseConfig.logEvent(
+                      eventType: 'attendee_download_clicked',
+                      description: 'Attendee download clicked',
+                      details: {'count': widget.records.length},
+                    );
                     await widget.onDownload(context);
                   },
           ),

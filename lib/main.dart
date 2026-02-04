@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:plantation_summary/login_page.dart';
 import 'package:plantation_summary/plantation_list_page.dart';
 import 'package:plantation_summary/broadcast_page.dart';
@@ -16,11 +17,18 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'firebase_config.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await FirebaseConfig.initialize();
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
+  );
 
   // Request notification permission before app starts
   await FirebaseMessaging.instance.requestPermission(
@@ -286,10 +294,10 @@ class _PlantationFormState extends State<PlantationForm> {
           ),
           backgroundColor: Colors.white,
           iconTheme: const IconThemeData(color: Colors.orange),
-          bottom: const TabBar(
-            tabs: [
+          bottom: TabBar(
+            tabs: const [
               Tab(text: 'Home'),
-              Tab(text: 'Zone Management'),
+              Tab(text: 'Plant Management'),
               Tab(text: 'All Plant Records'),
               Tab(text: 'Broadcast Message'),
               Tab(text: 'Reports'),
@@ -300,6 +308,24 @@ class _PlantationFormState extends State<PlantationForm> {
             labelColor: Colors.orange,
             indicatorColor: Colors.orange,
             isScrollable: true,
+            onTap: (index) async {
+              const tabs = [
+                'Home',
+                'Plant Management',
+                'All Plant Records',
+                'Broadcast Message',
+                'Reports',
+                'Users',
+                'Attendance',
+                'Contact',
+              ];
+              await FirebaseConfig.logEvent(
+                eventType: 'tab_clicked',
+                description: 'Tab selected: ${tabs[index]}',
+                userId: loggedInMobile,
+                details: {'tab': tabs[index]},
+              );
+            },
           ),
         ),
         body: FutureBuilder<Map<String, dynamic>?>(
@@ -350,122 +376,61 @@ class _PlantationFormState extends State<PlantationForm> {
                               child: IntrinsicHeight(
                                 child: Column(
                                   children: [
-                                    StatefulBuilder(
-                                      builder: (context, setZoneState) {
-                                        return Column(
+                                    FutureBuilder(
+                                      future: Future.wait([
+                                        FirebaseFirestore.instance.collection('plantation_records').get(),
+                                        FirebaseFirestore.instance.collection('zones').get(),
+                                      ]),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState != ConnectionState.done) {
+                                          return const CircularProgressIndicator();
+                                        }
+                                        if (!snapshot.hasData) {
+                                          return const SizedBox();
+                                        }
+                                        final plantDocs = (snapshot.data as List)[0].docs;
+                                        final zoneDocs = (snapshot.data as List)[1].docs;
+                                        final totalPlants = plantDocs.length;
+                                        final totalZones = zoneDocs.length;
+                                        final plantNames = plantDocs
+                                            .map((doc) {
+                                              final data = doc.data() as Map<String, dynamic>;
+                                              final name = data['name'];
+                                              return name?.toString();
+                                            })
+                                            .where((name) => name != null && name is String && name.isNotEmpty)
+                                            .toSet()
+                                            .toList();
+                                        return Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                           children: [
-                                            FutureBuilder<QuerySnapshot>(
-                                              future: FirebaseFirestore.instance
-                                                  .collection('zones')
-                                                  .get(),
-                                              builder: (context, zoneSnapshot) {
-                                                List<String> zones = [];
-                                                if (zoneSnapshot
-                                                            .connectionState ==
-                                                        ConnectionState.done &&
-                                                    zoneSnapshot.hasData) {
-                                                  zones = zoneSnapshot
-                                                      .data!
-                                                      .docs
-                                                      .map(
-                                                        (doc) =>
-                                                            doc['name']
-                                                                as String,
-                                                      )
-                                                      .toList();
-                                                }
-                                                return Row(
-                                                  children: [
-                                                    Expanded(
-                                                      child: DropdownButtonFormField<String>(
-                                                        value: _selectedZone,
-                                                        decoration:
-                                                            const InputDecoration(
-                                                              labelText:
-                                                                  'Zone Name',
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                        items: zones
-                                                            .map(
-                                                              (zone) =>
-                                                                  DropdownMenuItem(
-                                                                    value: zone,
-                                                                    child: Text(
-                                                                      zone,
-                                                                    ),
-                                                                  ),
-                                                            )
-                                                            .toList(),
-                                                        onChanged: (value) {
-                                                          setState(() {
-                                                            _selectedZone =
-                                                                value;
-                                                          });
-                                                        },
-                                                      ),
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(
-                                                        Icons.menu,
-                                                      ),
-                                                      tooltip: 'More options',
-                                                      onPressed: () {
-                                                        // Implement menu logic here
-                                                        showModalBottomSheet(
-                                                          context: context,
-                                                          builder: (context) => ListView(
-                                                            children: [
-                                                              ListTile(
-                                                                leading:
-                                                                    const Icon(
-                                                                      Icons
-                                                                          .info,
-                                                                    ),
-                                                                title: const Text(
-                                                                  'Zone Info',
-                                                                ),
-                                                                onTap: () {
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  );
-                                                                  // Implement zone info logic
-                                                                },
-                                                              ),
-                                                              ListTile(
-                                                                leading: const Icon(
-                                                                  Icons
-                                                                      .settings,
-                                                                ),
-                                                                title:
-                                                                    const Text(
-                                                                      'Settings',
-                                                                    ),
-                                                                onTap: () {
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  );
-                                                                  // Implement settings logic
-                                                                },
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        );
-                                                      },
-                                                    ),
-                                                  ],
-                                                );
-                                              },
+                                            Expanded(
+                                              child: Column(
+                                                children: [
+                                                  const Text('Total Plants', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  Text('$totalPlants', style: const TextStyle(fontSize: 20)),
+                                                ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                children: [
+                                                  const Text('Zone Count', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  Text('$totalZones', style: const TextStyle(fontSize: 20)),
+                                                ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Column(
+                                                children: [
+                                                  const Text('Types of Plant', style: TextStyle(fontWeight: FontWeight.bold)),
+                                                  Text('${plantNames.length}', style: const TextStyle(fontSize: 20)),
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         );
                                       },
-                                    ),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () =>
-                                          _openFilteredPlantList(context),
-                                      child: const Text('Filter'),
                                     ),
                                     const SizedBox(height: 24),
                                     if (snapshot.connectionState ==
@@ -485,7 +450,12 @@ class _PlantationFormState extends State<PlantationForm> {
                                     const SizedBox(height: 32),
                                     Spacer(),
                                     ElevatedButton(
-                                      onPressed: () {
+                                      onPressed: () async {
+                                        await FirebaseConfig.logEvent(
+                                          eventType: 'sign_out_clicked',
+                                          description: 'Sign out clicked',
+                                          userId: loggedInMobile,
+                                        );
                                         Navigator.pushReplacement(
                                           context,
                                           MaterialPageRoute(
@@ -506,166 +476,70 @@ class _PlantationFormState extends State<PlantationForm> {
                     },
                   ),
                 ),
-                // Zone Management Tab
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (!isSuperAdmin) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Only super admin can access this feature.',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ZoneManagementPage(),
-                            ),
-                          );
-                        },
-                        child: const Text('Zone Management'),
-                      ),
-                    ],
-                  ),
-                ),
+                // Plant Management Tab
+                ZoneManagementPage(),
                 // All Plant Records Tab
                 const PlantationListPage(),
                 // Broadcast Message Tab
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (!isSuperAdmin) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Only super admin can access this feature.',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const BroadcastPage(),
+                (isSuperAdmin)
+                    ? const BroadcastPage()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Only super admin can access Broadcast.',
+                              style: TextStyle(color: Colors.red),
                             ),
-                          );
-                        },
-                        child: const Text('Broadcast'),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
                 // Reports Tab
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (!isSuperAdmin) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Only super admin can access this feature.',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ReportPage(),
+                (isSuperAdmin)
+                    ? const ReportPage()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Only super admin can access Reports.',
+                              style: TextStyle(color: Colors.red),
                             ),
-                          );
-                        },
-                        child: const Text('All Plant Reports'),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                ),
                 // Users Tab
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (!isSuperAdmin) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Only super admin can access this feature.',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const UserRoleManagementPage(),
+                (isSuperAdmin)
+                    ? const UserRoleManagementPage()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Only super admin can access Users.',
+                              style: TextStyle(color: Colors.red),
                             ),
-                          );
-                        },
-                        child: const Text('User Role Management'),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
                 // Attendance Tab
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          if (!isSuperAdmin) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Only super admin can access this feature.',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AttendancePage(userFirestore: FirebaseFirestore.instance),
+                (isSuperAdmin)
+                    ? AttendancePage(userFirestore: FirebaseFirestore.instance)
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Only super admin can access Attendance.',
+                              style: TextStyle(color: Colors.red),
                             ),
-                          );
-                        },
-                        child: const Text('Attendance Management'),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
                 // Contact Tab
                 Padding(
                   padding: const EdgeInsets.only(top: 24.0, left: 16.0),
@@ -673,7 +547,12 @@ class _PlantationFormState extends State<PlantationForm> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await FirebaseConfig.logEvent(
+                            eventType: 'about_clicked',
+                            description: 'About clicked',
+                            userId: loggedInMobile,
+                          );
                           showAboutDialog(
                             context: context,
                             applicationName: 'Plantation Summary',
@@ -687,7 +566,12 @@ class _PlantationFormState extends State<PlantationForm> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await FirebaseConfig.logEvent(
+                            eventType: 'contact_clicked',
+                            description: 'Contact Us clicked',
+                            userId: loggedInMobile,
+                          );
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
@@ -767,7 +651,7 @@ class FilteredPlantListPage extends StatelessWidget {
                               children: [
                                 if (plantData['description'] != null)
                                   Text(
-                                    'Description: ${plantData['description']}',
+                                    'Plant Number: ${plantData['description']}',
                                   ),
                                 if (plantData['error'] != null)
                                   Text('Issue: ${plantData['error']}'),

@@ -23,6 +23,17 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Map<String, String> _errors = {};
 
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'register_page_opened',
+        description: 'Register page opened',
+      );
+    });
+  }
+
   bool _validateName(String value) =>
       RegExp(r'^[A-Za-z]+$').hasMatch(value.trim());
   bool _validateSurname(String value) =>
@@ -360,7 +371,19 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Text(_errors['password']!, style: TextStyle(color: Colors.red)),
                 ),
               SizedBox(height: 24),
-              ElevatedButton(onPressed: _registerUser, child: Text('Register')),
+              ElevatedButton(
+                onPressed: () async {
+                  await FirebaseConfig.logEvent(
+                    eventType: 'register_button_clicked',
+                    description: 'Register button clicked',
+                    userId: _mobileController.text.trim().isEmpty
+                        ? null
+                        : _mobileController.text.trim(),
+                  );
+                  _registerUser();
+                },
+                child: Text('Register'),
+              ),
             ],
           ),
         ),

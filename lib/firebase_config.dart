@@ -7,7 +7,7 @@ class FirebaseConfig {
   static FirebaseFirestore? _firestore;
 
   static final FirebaseOptions vrukshamojaniattendancelogsOptions = FirebaseOptions(
-    apiKey: '',
+    apiKey: 'AIzaSyCfCKHjzCuuOTt8dZFJc-VDAPuFrkaaQVY',
     appId: '1:436597351597:android:c7ff2ff0649734e5325224',
     messagingSenderId: '436597351597',
     projectId: 'vrukshamojaniattendancelogs',

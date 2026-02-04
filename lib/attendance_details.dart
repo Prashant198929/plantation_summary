@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'attendee_details.dart';
+import 'firebase_config.dart';
 
 class AttendanceDetails extends StatefulWidget {
   final int year;
@@ -32,6 +33,17 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
   void initState() {
     super.initState();
     fetchAttendance();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'attendance_details_opened',
+        description: 'Attendance details opened',
+        details: {
+          'year': widget.year,
+          'place': widget.place,
+          'zone': widget.zone,
+        },
+      );
+    });
   }
 
   Future<void> fetchAttendance() async {
@@ -174,7 +186,17 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
                                   alignment: Alignment.centerRight,
                                   child: ElevatedButton(
                                     child: Text('Details'),
-                                    onPressed: () {
+                                    onPressed: () async {
+                                      await FirebaseConfig.logEvent(
+                                        eventType: 'attendance_month_details_clicked',
+                                        description: 'Attendance month details clicked',
+                                        details: {
+                                          'year': widget.year,
+                                          'month': month,
+                                          'place': widget.place,
+                                          'zone': widget.zone,
+                                        },
+                                      );
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(

@@ -45,6 +45,13 @@ class _AttendancePageState extends State<AttendancePage> {
     super.initState();
     _checkAttendanceRole();
     _callInitializeSecondaryApp();
+    Future.microtask(() async {
+      await FirebaseConfig.logEvent(
+        eventType: 'attendance_page_opened',
+        description: 'Attendance page opened',
+        userId: loggedInMobile,
+      );
+    });
   }
 
   Future<void> _checkAttendanceRole() async {
@@ -195,6 +202,11 @@ if (!_canViewAttendance) {
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () async {
+              await FirebaseConfig.logEvent(
+                eventType: 'attendance_refresh_clicked',
+                description: 'Attendance refresh clicked',
+                userId: loggedInMobile,
+              );
               final topics = await AttendanceSupport.fetchTopics(
                 _secondaryFirestore,
               );
@@ -209,12 +221,24 @@ if (!_canViewAttendance) {
           ),
           IconButton(
             icon: Icon(Icons.calendar_today),
-            onPressed: () => _selectDate(context),
+            onPressed: () async {
+              await FirebaseConfig.logEvent(
+                eventType: 'attendance_date_picker_clicked',
+                description: 'Attendance date picker clicked',
+                userId: loggedInMobile,
+              );
+              _selectDate(context);
+            },
           ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
+          await FirebaseConfig.logEvent(
+            eventType: 'attendance_pull_refresh',
+            description: 'Attendance pull to refresh',
+            userId: loggedInMobile,
+          );
           final topics = await AttendanceSupport.fetchTopics(
             _secondaryFirestore,
           );
@@ -285,6 +309,11 @@ if (!_canViewAttendance) {
                                         ),
                                         GestureDetector(
                                           onTap: () async {
+                                            await FirebaseConfig.logEvent(
+                                              eventType: 'attendance_topics_clicked',
+                                              description: 'Attendance topics clicked',
+                                              userId: loggedInMobile,
+                                            );
                                             final selected = await showDialog<List<String>>(
                                               context: context,
                                               builder: (context) {
@@ -312,6 +341,17 @@ if (!_canViewAttendance) {
                                                                     tempSelected.remove(topic);
                                                                   }
                                                                 });
+                                                                Future.microtask(() async {
+                                                                  await FirebaseConfig.logEvent(
+                                                                    eventType: 'attendance_topic_toggled',
+                                                                    description: 'Attendance topic toggled',
+                                                                    userId: loggedInMobile,
+                                                                    details: {
+                                                                      'topic': topic,
+                                                                      'selected': checked == true,
+                                                                    },
+                                                                  );
+                                                                });
                                                               },
                                                             );
                                                           }).toList(),
@@ -320,11 +360,26 @@ if (!_canViewAttendance) {
                                                       actions: [
                                                         TextButton(
                                                           child: Text('OK'),
-                                                          onPressed: () => Navigator.of(context).pop(tempSelected),
+                                                          onPressed: () async {
+                                                            await FirebaseConfig.logEvent(
+                                                              eventType: 'attendance_topics_ok',
+                                                              description: 'Attendance topics OK',
+                                                              userId: loggedInMobile,
+                                                              details: {'topics': tempSelected},
+                                                            );
+                                                            Navigator.of(context).pop(tempSelected);
+                                                          },
                                                         ),
                                                         TextButton(
                                                           child: Text('Cancel'),
-                                                          onPressed: () => Navigator.of(context).pop(_selectedTopics),
+                                                          onPressed: () async {
+                                                            await FirebaseConfig.logEvent(
+                                                              eventType: 'attendance_topics_cancel',
+                                                              description: 'Attendance topics cancel',
+                                                              userId: loggedInMobile,
+                                                            );
+                                                            Navigator.of(context).pop(_selectedTopics);
+                                                          },
                                                         ),
                                                       ],
                                                     );
@@ -388,6 +443,14 @@ if (!_canViewAttendance) {
                                         setState(() {
                                           _selectedPlace = value;
                                         });
+                                        Future.microtask(() async {
+                                          await FirebaseConfig.logEvent(
+                                            eventType: 'attendance_place_changed',
+                                            description: 'Attendance place changed',
+                                            userId: loggedInMobile,
+                                            details: {'place': value},
+                                          );
+                                        });
                                       },
                                     ),
                                     SizedBox(height: 16),
@@ -407,7 +470,13 @@ if (!_canViewAttendance) {
                                             IconButton(
                                               icon: Icon(Icons.refresh),
                                               tooltip: 'Refresh user list',
-                                              onPressed: () {
+                                              onPressed: () async {
+                                                await FirebaseConfig.logEvent(
+                                                  eventType: 'attendance_user_refresh_clicked',
+                                                  description: 'Attendance user refresh clicked',
+                                                  userId: loggedInMobile,
+                                                  details: {'zone': _currentZone},
+                                                );
                                                 print(
                                                   'Manual refresh clicked. Current zone: $_currentZone',
                                                 );
@@ -483,6 +552,18 @@ if (!_canViewAttendance) {
                                                                 .remove(user);
                                                           }
                                                         });
+                                                        Future.microtask(() async {
+                                                          await FirebaseConfig.logEvent(
+                                                            eventType: 'attendance_user_toggled',
+                                                            description: 'Attendance user toggled',
+                                                            userId: loggedInMobile,
+                                                            details: {
+                                                              'userName': user['name'],
+                                                              'mobile': user['mobile'],
+                                                              'selected': checked == true,
+                                                            },
+                                                          );
+                                                        });
                                                       },
                                                       visualDensity:
                                                           VisualDensity.compact,
@@ -521,6 +602,16 @@ if (!_canViewAttendance) {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () async {
+                    await FirebaseConfig.logEvent(
+                      eventType: 'attendance_mark_clicked',
+                      description: 'Attendance mark clicked',
+                      userId: loggedInMobile,
+                      details: {
+                        'selectedUsers': _selectedUsers.length,
+                        'topics': _selectedTopics,
+                        'place': _selectedPlace,
+                      },
+                    );
                     if (_selectedTopics.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -677,6 +768,11 @@ if (!_canViewAttendance) {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () async {
+                    await FirebaseConfig.logEvent(
+                      eventType: 'attendance_view_clicked',
+                      description: 'Attendance view clicked',
+                      userId: loggedInMobile,
+                    );
                     DateTime startDate = DateTime.now();
                     DateTime endDate = DateTime.now();
                     String? selectedPlace = _places.isNotEmpty
@@ -912,7 +1008,12 @@ title: Text(
                                   SizedBox(height: 16),
                                   ElevatedButton(
                                     child: Text('Show Attendance'),
-                                    onPressed: () {
+                                    onPressed: () async {
+                                      await FirebaseConfig.logEvent(
+                                        eventType: 'attendance_show_clicked',
+                                        description: 'Attendance show clicked',
+                                        userId: loggedInMobile,
+                                      );
                                       if (_secondaryFirestore == null) {
                                         ScaffoldMessenger.of(
                                           context,
@@ -953,6 +1054,11 @@ title: Text(
                                     icon: Icon(Icons.download),
                                     label: Text('Download List'),
                                     onPressed: () async {
+                                      await FirebaseConfig.logEvent(
+                                        eventType: 'attendance_download_clicked',
+                                        description: 'Attendance download clicked',
+                                        userId: loggedInMobile,
+                                      );
                                       if (_secondaryFirestore == null) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           SnackBar(
@@ -1065,7 +1171,14 @@ title: Text(
                               actions: [
                                 TextButton(
                                   child: Text('Close'),
-                                  onPressed: () => Navigator.of(context).pop(),
+                                  onPressed: () async {
+                                    await FirebaseConfig.logEvent(
+                                      eventType: 'attendance_view_closed',
+                                      description: 'Attendance view closed',
+                                      userId: loggedInMobile,
+                                    );
+                                    Navigator.of(context).pop();
+                                  },
                                 ),
                               ],
                             );

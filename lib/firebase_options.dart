@@ -3,12 +3,11 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     return const FirebaseOptions(
-      apiKey: 'AIzaSyCfCKHjzCuuOTt8dZFJc-VDAPuFrkaaQVY',
-    appId: '1:436597351597:android:c7ff2ff0649734e5325224',
-    messagingSenderId: '436597351597',
-    projectId: 'vrukshamojaniattendancelogs',
-    databaseURL: 'https://vrukshamojaniattendancelogs.firebaseio.com',
-    storageBucket: 'vrukshamojaniattendancelogs.firebasestorage.app',
-  );
+      apiKey: 'AIzaSyC1iAbzV2ulwA__OQIvq2a_rz1L1Wr3Rig',
+      appId: '1:1056315876298:android:236d9735f581956a8ee533',
+      messagingSenderId: '1056315876298',
+      projectId: 'vrukshamojani-4ffd6',
+      storageBucket: 'vrukshamojani-4ffd6.firebasestorage.app',
+    );
   }
 }
