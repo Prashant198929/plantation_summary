@@ -34,6 +34,9 @@ class _PlantationListPageState extends State<PlantationListPage> {
 
   Future<void> _fetchUserZone() async {
     if (loggedInMobile == null) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         loading = false;
       });
@@ -44,6 +47,9 @@ class _PlantationListPageState extends State<PlantationListPage> {
         .where('mobile', isEqualTo: loggedInMobile)
         .limit(1)
         .get();
+    if (!mounted) {
+      return;
+    }
     if (query.docs.isNotEmpty) {
       final data = query.docs.first.data();
       if (data['role']?.toString().toLowerCase() == 'super_admin' ||
@@ -72,6 +78,14 @@ class _PlantationListPageState extends State<PlantationListPage> {
       return Scaffold(
         appBar: AppBar(title: const Text('Plantation Records')),
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (!isSuperAdmin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Plantation Records')),
+        body: const Center(
+          child: Text('Only super admin can access Plantation Records.'),
+        ),
       );
     }
     return DefaultTabController(
@@ -711,11 +725,17 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                 ],
                                               ),
                                               const SizedBox(height: 8),
-ElevatedButton(
+                                              ElevatedButton(
                                                 onPressed: () async {
                                                   await FirebaseConfig.logEvent(
                                                     eventType: 'plantation_edit_upload_clicked',
                                                     description: 'Plantation edit upload clicked',
+                                                    userId: loggedInMobile,
+                                                    details: {'docId': plant.id},
+                                                  );
+                                                  await FirebaseConfig.logEvent(
+                                                    eventType: 'plantation_edit_upload_initiated',
+                                                    description: 'Plantation edit upload initiated',
                                                     userId: loggedInMobile,
                                                     details: {'docId': plant.id},
                                                   );
@@ -939,9 +959,24 @@ ElevatedButton(
                                                     docId;
                                                 historicalData['editedAt'] =
                                                     DateTime.now().toIso8601String();
+                                                final historyName =
+                                                    (historicalData['name'] ?? '')
+                                                        .toString();
+                                                final historyZone =
+                                                    (historicalData['zoneName'] ??
+                                                            '')
+                                                        .toString();
+                                                final now = DateTime.now();
+                                                final dateKey =
+                                                    '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+                                                final rawDocId =
+                                                    '${dateKey}_${historyName}_${historyZone}';
+                                                final historyDocId = rawDocId
+                                                    .replaceAll(RegExp(r'[^\w\d]'), '_');
                                                 await FirebaseFirestore.instance
                                                     .collection('HistoricalData')
-                                                    .add(historicalData);
+                                                    .doc(historyDocId)
+                                                    .set(historicalData);
 
                                                 await FirebaseFirestore.instance
                                                     .collection(

@@ -20,6 +20,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
   List<Map<String, dynamic>> _allUsers = [];
   String? _registrationToken;
 
+  String _broadcastDocId(String phone) {
+    final now = DateTime.now();
+    final dateKey =
+        '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final rawId = '${dateKey}_$phone';
+    return rawId.replaceAll(RegExp(r'[^\w\d]'), '_');
+  }
+
   Future<List<Map<String, dynamic>>> _getLocalNotifications() async {
     final prefs = await SharedPreferences.getInstance();
     final List<String> notifications =
@@ -55,6 +63,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
 
   Future<void> _fetchAllUsers() async {
     final query = await FirebaseFirestore.instance.collection('users').get();
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _allUsers = query.docs.map((doc) => doc.data()).toList();
     });
@@ -65,12 +76,18 @@ class _BroadcastPageState extends State<BroadcastPage> {
       String? token = await FirebaseMessaging.instance.getToken();
       print('FCM Registration Token: $token');
       debugPrint('FCM Registration Token: $token');
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _registrationToken = token;
       });
     } catch (e) {
       print('Error retrieving FCM token: $e');
       debugPrint('Error retrieving FCM token: $e');
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _registrationToken = 'Error retrieving token: $e';
       });
@@ -81,20 +98,44 @@ class _BroadcastPageState extends State<BroadcastPage> {
     // Replace with your backend server IP and port, or use a public endpoint if available
     final url = Uri.parse('http://161.118.179.102:8082/api/generate-token');
     debugPrint('Fetching access token from: $url');
+    await FirebaseConfig.logEvent(
+      eventType: 'broadcast_access_token_fetch_started',
+      description: 'Broadcast access token fetch started',
+      userId: loggedInMobile,
+      details: {'url': url.toString()},
+    );
     try {
       final response = await http.get(url).timeout(const Duration(seconds: 5));
       debugPrint(
         'Access token response: ${response.statusCode} ${response.body}',
       );
       if (response.statusCode == 200) {
+        await FirebaseConfig.logEvent(
+          eventType: 'broadcast_access_token_fetch_succeeded',
+          description: 'Broadcast access token fetch succeeded',
+          userId: loggedInMobile,
+          details: {'statusCode': response.statusCode},
+        );
         return response.body;
       } else {
+        await FirebaseConfig.logEvent(
+          eventType: 'broadcast_access_token_fetch_failed',
+          description: 'Broadcast access token fetch failed',
+          userId: loggedInMobile,
+          details: {'statusCode': response.statusCode},
+        );
         throw Exception(
           'Failed to fetch access token: ${response.statusCode} ${response.body}',
         );
       }
     } on Exception catch (e) {
       debugPrint('Access token fetch error: $e');
+      await FirebaseConfig.logEvent(
+        eventType: 'broadcast_access_token_fetch_error',
+        description: 'Broadcast access token fetch error',
+        userId: loggedInMobile,
+        details: {'error': e.toString()},
+      );
       throw Exception(
         'Could not fetch access token. Please check backend URL and connectivity. Error: $e',
       );
@@ -128,13 +169,17 @@ class _BroadcastPageState extends State<BroadcastPage> {
         failedPhones.add(phone);
         // Also log missing token for diagnostics
         try {
-          await FirebaseFirestore.instance.collection('broadcasts').add({
-            'message': message,
-            'phone': phone,
-            'sentAt': FieldValue.serverTimestamp(),
-            'registrationToken': null,
-            'status': 'missing_token',
-          });
+          final docId = _broadcastDocId(phone);
+          await FirebaseFirestore.instance
+              .collection('broadcasts')
+              .doc(docId)
+              .set({
+                'message': message,
+                'phone': phone,
+                'sentAt': FieldValue.serverTimestamp(),
+                'registrationToken': null,
+                'status': 'missing_token',
+              });
         } catch (_) {}
         continue;
       }
@@ -161,14 +206,18 @@ class _BroadcastPageState extends State<BroadcastPage> {
         debugPrint('FCM JSON response: ${response.statusCode} ${response.body}');
 
         // Log attempt result in Firestore
-        await FirebaseFirestore.instance.collection('broadcasts').add({
-          'message': message,
-          'phone': phone,
-          'sentAt': FieldValue.serverTimestamp(),
-          'registrationToken': targetToken,
-          'statusCode': response.statusCode,
-          'responseBody': response.body,
-        });
+        final docId = _broadcastDocId(phone);
+        await FirebaseFirestore.instance
+            .collection('broadcasts')
+            .doc(docId)
+            .set({
+              'message': message,
+              'phone': phone,
+              'sentAt': FieldValue.serverTimestamp(),
+              'registrationToken': targetToken,
+              'statusCode': response.statusCode,
+              'responseBody': response.body,
+            });
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           successCount++;
@@ -182,14 +231,18 @@ class _BroadcastPageState extends State<BroadcastPage> {
         failedPhones.add(phone);
         // Log the failure in Firestore for diagnostics
         try {
-          await FirebaseFirestore.instance.collection('broadcasts').add({
-            'message': message,
-            'phone': phone,
-            'sentAt': FieldValue.serverTimestamp(),
-            'registrationToken': targetToken,
-            'status': 'error',
-            'error': e.toString(),
-          });
+          final docId = _broadcastDocId(phone);
+          await FirebaseFirestore.instance
+              .collection('broadcasts')
+              .doc(docId)
+              .set({
+                'message': message,
+                'phone': phone,
+                'sentAt': FieldValue.serverTimestamp(),
+                'registrationToken': targetToken,
+                'status': 'error',
+                'error': e.toString(),
+              });
         } catch (_) {}
       }
     }
@@ -222,6 +275,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
     }
 
     _messageController.clear();
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _selectedPhones = [];
     });

@@ -39,12 +39,18 @@ class _AttendancePageState extends State<AttendancePage> {
   FirebaseApp? _secondaryApp;
   bool _canViewAttendance = false;
   bool _roleChecked = false;
+  bool _isSuperAdmin = false;
+  List<String> _zones = [];
+  String? _selectedZone;
 
   @override
   void initState() {
     super.initState();
     _checkAttendanceRole();
     _callInitializeSecondaryApp();
+    Future.microtask(() async {
+      await _cleanupOldAttendanceLogs();
+    });
     Future.microtask(() async {
       await FirebaseConfig.logEvent(
         eventType: 'attendance_page_opened',
@@ -55,23 +61,38 @@ class _AttendancePageState extends State<AttendancePage> {
   }
 
   Future<void> _checkAttendanceRole() async {
-    // Replace with your user id logic if needed
     final userQuery = await widget.userFirestore
         .collection('users')
         .where('mobile', isEqualTo: loggedInMobile)
         .limit(1)
         .get();
+    bool canView = false;
+    bool isSuperAdmin = false;
     if (userQuery.docs.isNotEmpty) {
       final data = userQuery.docs.first.data();
-if (data['attendance_viewer'] == true) {
-  setState(() {
-    _canViewAttendance = true;
-  });
-}
+      final role = data['role']?.toString().toLowerCase();
+      isSuperAdmin = role == 'super_admin' || role == 'superadmin';
+      canView = isSuperAdmin || data['attendance_viewer'] == true;
+    }
+    if (!mounted) {
+      return;
     }
     setState(() {
+      _isSuperAdmin = isSuperAdmin;
+      _canViewAttendance = canView;
       _roleChecked = true;
     });
+    if (isSuperAdmin) {
+      await _fetchZones();
+      if (_zones.isNotEmpty && _selectedZone == null) {
+        setState(() {
+          _selectedZone = _zones.first;
+        });
+      }
+      if (_secondaryFirestore != null) {
+        await _fetchZoneUsers();
+      }
+    }
   }
 
   Future<void> _callInitializeSecondaryApp() async {
@@ -80,11 +101,17 @@ if (data['attendance_viewer'] == true) {
     );
     if (secondaryApp != null) {
       final firestore = FirebaseFirestore.instanceFor(app: secondaryApp);
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _secondaryApp = secondaryApp;
         _secondaryFirestore = firestore;
       });
       final topics = await AttendanceSupport.fetchTopics(firestore);
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _topics = topics;
         if (_topics.isNotEmpty && _selectedTopics.isEmpty) {
@@ -94,11 +121,50 @@ if (data['attendance_viewer'] == true) {
       });
       await _fetchPlaces();
       await _fetchCurrentUserZone();
+      if (_isSuperAdmin) {
+        await _fetchZones();
+        if (_zones.isNotEmpty && _selectedZone == null) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _selectedZone = _zones.first;
+        });
+        }
+      } else {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _selectedZone = _currentZone;
+        });
+      }
       await _fetchZoneUsers();
     } else {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _errorMessage = 'Failed to initialize Firebase. Please try again.';
       });
+    }
+  }
+
+  Future<void> _cleanupOldAttendanceLogs() async {
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    try {
+      await FirebaseConfig.initialize();
+      final logFirestore = FirebaseConfig.firestore;
+      final snapshot = await logFirestore.collection('Register_Logs').get();
+      for (final doc in snapshot.docs) {
+        final docDate = DateTime.tryParse(doc.id);
+        if (docDate != null && docDate.isBefore(firstDayOfMonth)) {
+          await logFirestore.collection('Register_Logs').doc(doc.id).delete();
+        }
+      }
+    } catch (e) {
+      debugPrint('Attendance log cleanup failed: $e');
     }
   }
 
@@ -109,6 +175,9 @@ if (data['attendance_viewer'] == true) {
 
   Future<void> _fetchPlaces() async {
     final places = await AttendanceSupport.fetchPlaces(_secondaryFirestore);
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _places = places;
       if (_places.isNotEmpty && _selectedPlace == null) {
@@ -117,12 +186,52 @@ if (data['attendance_viewer'] == true) {
     });
   }
 
+  Future<void> _fetchZones() async {
+    final zonesSnapshot = await widget.userFirestore
+        .collection('zones')
+        .orderBy('name', descending: false)
+        .get();
+    final zonesFromCollection = zonesSnapshot.docs
+        .map(
+          (doc) =>
+              (doc.data() as Map<String, dynamic>)['name']?.toString() ?? '',
+        )
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+
+    final usersSnapshot =
+        await widget.userFirestore.collection('users').get();
+    final zonesFromUsers = usersSnapshot.docs
+        .map(
+          (doc) =>
+              (doc.data() as Map<String, dynamic>)['zone']?.toString() ?? '',
+        )
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+
+    final merged = <String>{...zonesFromCollection, ...zonesFromUsers}.toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _zones = merged;
+    });
+  }
+
   Future<void> _fetchZoneUsers() async {
-    print('Calling fetchZoneUsers with _currentZone: "${_currentZone}"');
+    final zoneToQuery = _isSuperAdmin ? _selectedZone : _currentZone;
+    print('Calling fetchZoneUsers with zone: "${zoneToQuery}"');
     final users = await AttendanceSupport.fetchZoneUsers(
       widget.userFirestore,
-      _currentZone,
+      zoneToQuery,
     );
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _zoneUsers = users;
       _filteredUsers = users;
@@ -132,6 +241,9 @@ if (data['attendance_viewer'] == true) {
 
   Future<void> _fetchCurrentUserZone() async {
     final zone = await AttendanceSupport.fetchCurrentUserZone(context);
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _currentZone = zone;
     });
@@ -140,6 +252,9 @@ if (data['attendance_viewer'] == true) {
   Future<void> _selectDate(BuildContext context) async {
     final picked = await AttendanceSupport.selectDate(context, _selectedDate);
     if (picked != null && picked != _selectedDate) {
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _selectedDate = picked;
       });
@@ -268,13 +383,14 @@ if (!_canViewAttendance) {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text(
-                          'Zone: ${_currentZone ?? "Loading..."}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        if (!_isSuperAdmin)
+                          Text(
+                            'Zone: ${_currentZone ?? "Loading..."}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     SizedBox(height: 16),
@@ -399,6 +515,7 @@ if (!_canViewAttendance) {
                                               vertical: 16,
                                             ),
                                             decoration: BoxDecoration(
+                                              color: Color(0xFFE8F5E9),
                                               border: Border.all(
                                                 color: Colors.grey,
                                               ),
@@ -454,6 +571,53 @@ if (!_canViewAttendance) {
                                       },
                                     ),
                                     SizedBox(height: 16),
+                                    if (_isSuperAdmin)
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Zone',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 8),
+                                          DropdownButtonFormField<String>(
+                                            value: _selectedZone,
+                                            menuMaxHeight: 300,
+                                            isExpanded: true,
+                                            items: _zones
+                                                .map(
+                                                  (zone) => DropdownMenuItem(
+                                                    value: zone,
+                                                    child: Text(zone),
+                                                  ),
+                                                )
+                                                .toList(),
+                                            onChanged: (value) async {
+                                              setState(() {
+                                                _selectedZone = value;
+                                                _selectedUsers = [];
+                                                _searchController.clear();
+                                              });
+                                              await FirebaseConfig.logEvent(
+                                                eventType:
+                                                    'attendance_zone_changed',
+                                                description:
+                                                    'Attendance zone changed',
+                                                userId: loggedInMobile,
+                                                details: {'zone': value},
+                                              );
+                                              await _fetchZoneUsers();
+                                            },
+                                            decoration: InputDecoration(
+                                              border: OutlineInputBorder(),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (_isSuperAdmin) SizedBox(height: 16),
                                     Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -473,9 +637,14 @@ if (!_canViewAttendance) {
                                               onPressed: () async {
                                                 await FirebaseConfig.logEvent(
                                                   eventType: 'attendance_user_refresh_clicked',
-                                                  description: 'Attendance user refresh clicked',
+                                                  description:
+                                                      'Attendance user refresh clicked',
                                                   userId: loggedInMobile,
-                                                  details: {'zone': _currentZone},
+                                                  details: {
+                                                    'zone': _isSuperAdmin
+                                                        ? _selectedZone
+                                                        : _currentZone,
+                                                  },
                                                 );
                                                 print(
                                                   'Manual refresh clicked. Current zone: $_currentZone',
@@ -483,6 +652,29 @@ if (!_canViewAttendance) {
                                                 _fetchZoneUsers();
                                               },
                                             ),
+                                            if (_isSuperAdmin)
+                                              TextButton(
+                                                onPressed: () async {
+                                                  setState(() {
+                                                    _selectedUsers = List.from(
+                                                      _zoneUsers,
+                                                    );
+                                                  });
+                                                  await FirebaseConfig.logEvent(
+                                                    eventType:
+                                                        'attendance_select_all_users',
+                                                    description:
+                                                        'Attendance select all users',
+                                                    userId: loggedInMobile,
+                                                    details: {
+                                                      'zone': _selectedZone,
+                                                      'count':
+                                                          _selectedUsers.length,
+                                                    },
+                                                  );
+                                                },
+                                                child: Text('Select All'),
+                                              ),
                                           ],
                                         ),
                                       ],
@@ -639,32 +831,23 @@ if (!_canViewAttendance) {
                       int addedCount = 0;
                       int duplicateCount = 0;
                       String duplicateNames = '';
+                      final monthKey =
+                          AttendanceSupport.monthYearKey(_selectedDate);
                       for (final user in _selectedUsers) {
-                        final existing = await _secondaryFirestore!
+                        final dateKey =
+                            '${_selectedDate.year.toString().padLeft(4, '0')}${_selectedDate.month.toString().padLeft(2, '0')}${_selectedDate.day.toString().padLeft(2, '0')}';
+                        final rawDocId = '${dateKey}_${user['uid']}';
+                        final docId = rawDocId.replaceAll(
+                          RegExp(r'[^\w\d]'),
+                          '_',
+                        );
+                        final docRef = _secondaryFirestore!
                             .collection('Attendance')
-                            .where(
-                              'date',
-                              isGreaterThanOrEqualTo: Timestamp.fromDate(
-                                DateTime(
-                                  _selectedDate.year,
-                                  _selectedDate.month,
-                                  _selectedDate.day,
-                                ),
-                              ),
-                            )
-                            .where(
-                              'date',
-                              isLessThan: Timestamp.fromDate(
-                                DateTime(
-                                  _selectedDate.year,
-                                  _selectedDate.month,
-                                  _selectedDate.day + 1,
-                                ),
-                              ),
-                            )
-                            .where('name', isEqualTo: user['name'])
-                            .get();
-                        if (existing.docs.isNotEmpty) {
+                            .doc(monthKey)
+                            .collection('records')
+                            .doc(docId);
+                        final existing = await docRef.get();
+                        if (existing.exists) {
                           duplicateCount++;
                           duplicateNames += '${user['name']}, ';
                           print(
@@ -672,23 +855,21 @@ if (!_canViewAttendance) {
                           );
                           continue;
                         }
-                        final docRef = await _secondaryFirestore!
-                            .collection('Attendance')
-                            .add({
-                              'date': Timestamp.fromDate(_selectedDate),
-                              'time': DateTime.now().toLocal().toString().split(
-                                ' ',
-                              )[1],
-                              'status': 'Present',
-                              'Topic': _selectedTopics.join(', '),
-                              'Place': _selectedPlace,
-                              'zone': user['zone'],
-                              'name': user['name'],
-                              'userId': user['uid'],
-                              'mobile': user['mobile'],
-                            });
+                        await docRef.set({
+                          'date': Timestamp.fromDate(_selectedDate),
+                          'time': DateTime.now().toLocal().toString().split(
+                            ' ',
+                          )[1],
+                          'status': 'Present',
+                          'Topic': _selectedTopics.join(', '),
+                          'Place': _selectedPlace,
+                          'zone': user['zone'],
+                          'name': user['name'],
+                          'userId': user['uid'],
+                          'mobile': user['mobile'],
+                        });
                         print(
-                          'Attendance record added for ${user['name']}: ${docRef.id}',
+                          'Attendance record added for ${user['name']}: $docId',
                         );
                         addedCount++;
                       }
@@ -778,7 +959,8 @@ if (!_canViewAttendance) {
                     String? selectedPlace = _places.isNotEmpty
                         ? _places[0]
                         : null;
-                    String? selectedZone = _currentZone;
+                    String? selectedZone =
+                        _isSuperAdmin ? _selectedZone : _currentZone;
 
                     int currentYear = DateTime.now().year;
                     List<int> yearsList = List.generate(
@@ -987,14 +1169,27 @@ title: Text(
                                             border: OutlineInputBorder(),
                                           ),
                                           value: selectedZone,
-                                          items: (_places.isNotEmpty
-                                                  ? _zoneUsers.map((u) => u['zone']?.toString() ?? '').toSet().toList()
-                                                  : [])
+                                          menuMaxHeight: 300,
+                                          isExpanded: true,
+                                          items: (_isSuperAdmin
+                                                  ? _zones
+                                                  : _zoneUsers
+                                                      .map(
+                                                        (u) =>
+                                                            u['zone']
+                                                                ?.toString() ??
+                                                            '',
+                                                      )
+                                                      .toSet()
+                                                      .toList())
                                               .where((z) => z.isNotEmpty)
-                                              .map((zone) => DropdownMenuItem<String>(
-                                                    value: zone,
-                                                    child: Text(zone),
-                                                  ))
+                                              .map(
+                                                (zone) =>
+                                                    DropdownMenuItem<String>(
+                                                      value: zone,
+                                                      child: Text(zone),
+                                                    ),
+                                              )
                                               .toList(),
                                           onChanged: (value) {
                                             setState(() {
@@ -1026,8 +1221,12 @@ title: Text(
                                         );
                                         return;
                                       }
+                                      final logPlace =
+                                          usePlace ? selectedPlace : null;
+                                      final logZone =
+                                          useZone ? selectedZone : null;
                                       print(
-                                        '[AttendancePage] Show Attendance: year=$selectedYear, place="$selectedPlace", zone="$selectedZone", startDate=${useStartDate ? startDate : null}, endDate=${useEndDate ? endDate : null}',
+                                        '[AttendancePage] Show Attendance: year=$selectedYear, place="$logPlace", zone="$logZone", startDate=${useStartDate ? startDate : null}, endDate=${useEndDate ? endDate : null}',
                                       );
                                       Navigator.push(
                                         context,
@@ -1035,8 +1234,10 @@ title: Text(
                                           builder: (context) =>
                                               AttendanceDetails(
                                                 year: selectedYear,
-                                                place: selectedPlace,
-                                                zone: selectedZone,
+                                                place: usePlace
+                                                    ? selectedPlace
+                                                    : null,
+                                                zone: useZone ? selectedZone : null,
                                                 firestore: _secondaryFirestore!,
                                                 startDate: useStartDate
                                                     ? startDate
@@ -1067,19 +1268,75 @@ title: Text(
                                         );
                                         return;
                                       }
-                                      final query = _secondaryFirestore!
-                                          .collection('Attendance')
-                                          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(useStartDate ? startDate : DateTime(selectedYear, 1, 1)))
-                                          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(useEndDate ? endDate : DateTime(selectedYear, 12, 31, 23, 59, 59)));
-                                      if (usePlace ?? false && selectedPlace != null) {
-                                        query.where('Place', isEqualTo: selectedPlace);
+                                      final normalizedSelectedPlace =
+                                          (selectedPlace ?? '')
+                                              .trim()
+                                              .toLowerCase()
+                                              .replaceAll(RegExp(r'\s+'), ' ');
+                                      final normalizedSelectedZoneRaw =
+                                          (selectedZone ?? '')
+                                              .trim()
+                                              .toLowerCase();
+                                      final normalizedSelectedZoneDigits =
+                                          RegExp(r'(\d+)')
+                                                  .firstMatch(
+                                                    normalizedSelectedZoneRaw,
+                                                  )
+                                                  ?.group(1) ??
+                                              '';
+                                      final normalizedSelectedZone =
+                                          normalizedSelectedZoneDigits
+                                                  .isNotEmpty
+                                              ? int.tryParse(
+                                                    normalizedSelectedZoneDigits,
+                                                  )?.toString() ??
+                                                  normalizedSelectedZoneDigits
+                                              : normalizedSelectedZoneRaw;
+                                      final downloadStart = useStartDate
+                                          ? startDate
+                                          : DateTime(selectedYear, 1, 1);
+                                      final downloadEnd = useEndDate
+                                          ? endDate
+                                          : DateTime(
+                                              selectedYear,
+                                              12,
+                                              31,
+                                              23,
+                                              59,
+                                              59,
+                                            );
+                                      final monthKeys =
+                                          AttendanceSupport.monthYearKeysBetween(
+                                        downloadStart,
+                                        downloadEnd,
+                                      );
+                                      final allRecords =
+                                          <Map<String, dynamic>>[];
+                                      for (final key in monthKeys) {
+                                        final snapshot = await _secondaryFirestore!
+                                            .collection('Attendance')
+                                            .doc(key)
+                                            .collection('records')
+                                            .where(
+                                              'date',
+                                              isGreaterThanOrEqualTo:
+                                                  Timestamp.fromDate(
+                                                    downloadStart,
+                                                  ),
+                                            )
+                                            .where(
+                                              'date',
+                                              isLessThanOrEqualTo:
+                                                  Timestamp.fromDate(
+                                                    downloadEnd,
+                                                  ),
+                                            )
+                                            .get();
+                                        for (final doc in snapshot.docs) {
+                                          allRecords.add(doc.data());
+                                        }
                                       }
-                                      if ((useZone == true) && (selectedZone?.isNotEmpty ?? false)) {
-                                        query.where('zone', isEqualTo: selectedZone);
-                                      }
-                                      final snapshot = await query.get();
-                                      final records = snapshot.docs.map((doc) {
-                                        final data = doc.data();
+                                      final records = allRecords.map((data) {
                                         // Add formatted date string if not present
                                         if (!data.containsKey('dateString')) {
                                           final ts = data['date'];
@@ -1104,11 +1361,47 @@ title: Text(
                                         if (dt == null) return false;
                                         if (useStartDate && dt.isBefore(startDate)) return false;
                                         if (useEndDate && dt.isAfter(endDate)) return false;
-                                        if (selectedPlace?.isNotEmpty ?? false) {
-                                          if ((data['Place'] ?? '').toString() != selectedPlace) return false;
+                                        if (usePlace &&
+                                            normalizedSelectedPlace.isNotEmpty) {
+                                          final recordPlace =
+                                              (data['Place'] ?? '')
+                                                  .toString()
+                                                  .trim()
+                                                  .toLowerCase()
+                                                  .replaceAll(
+                                                    RegExp(r'\s+'),
+                                                    ' ',
+                                                  );
+                                          if (recordPlace !=
+                                              normalizedSelectedPlace) {
+                                            return false;
+                                          }
                                         }
-                                        if (selectedZone?.isNotEmpty ?? false) {
-                                          if ((data['zone'] ?? '').toString() != selectedZone) return false;
+                                        if (useZone &&
+                                            normalizedSelectedZone.isNotEmpty) {
+                                          final recordZoneRaw =
+                                              (data['zone'] ?? '')
+                                                  .toString()
+                                                  .trim()
+                                                  .toLowerCase();
+                                          final recordZoneDigits =
+                                              RegExp(r'(\d+)')
+                                                      .firstMatch(
+                                                        recordZoneRaw,
+                                                      )
+                                                      ?.group(1) ??
+                                                  '';
+                                          final recordZone =
+                                              recordZoneDigits.isNotEmpty
+                                                  ? int.tryParse(
+                                                        recordZoneDigits,
+                                                      )?.toString() ??
+                                                      recordZoneDigits
+                                                  : recordZoneRaw;
+                                          if (recordZone !=
+                                              normalizedSelectedZone) {
+                                            return false;
+                                          }
                                         }
                                         // Only filter by year if not using date range
                                         if (!(useStartDate || useEndDate) && dt.year != selectedYear) return false;
@@ -1142,8 +1435,42 @@ title: Text(
                                         downloadsDir = await getExternalStorageDirectory();
                                       }
                                       final path = downloadsDir?.path ?? (await getApplicationDocumentsDirectory()).path;
-                                      final fileNameRaw = 'attendance_${selectedYear}_${useStartDate ? _formatDateTime(startDate) : ''}_${useEndDate ? _formatDateTime(endDate) : ''}_${selectedPlace ?? ''}_${selectedZone ?? ''}_${_formatDateTime(DateTime.now())}';
-                                      final fileName = fileNameRaw.replaceAll(RegExp(r'[^\w\d]'), '') + '.xlsx';
+                                      final filterParts = <String>[
+                                        'attendance',
+                                        selectedYear.toString(),
+                                      ];
+                                      if (useStartDate) {
+                                        filterParts.add(
+                                          'from${_formatDateTime(startDate)}',
+                                        );
+                                      }
+                                      if (useEndDate) {
+                                        filterParts.add(
+                                          'to${_formatDateTime(endDate)}',
+                                        );
+                                      }
+                                      if (usePlace &&
+                                          normalizedSelectedPlace.isNotEmpty) {
+                                        filterParts.add(
+                                          'place${normalizedSelectedPlace.replaceAll(RegExp(r'\s+'), '')}',
+                                        );
+                                      }
+                                      if (useZone &&
+                                          normalizedSelectedZone.isNotEmpty) {
+                                        filterParts.add(
+                                          'zone$normalizedSelectedZone',
+                                        );
+                                      }
+                                      filterParts.add(
+                                        _formatDateTime(DateTime.now()),
+                                      );
+                                      final fileNameRaw = filterParts.join('_');
+                                      final fileName = fileNameRaw
+                                              .replaceAll(
+                                                RegExp(r'[^\w\d]'),
+                                                '',
+                                              ) +
+                                          '.xlsx';
                                       final file = File('$path/$fileName');
                                       await file.writeAsBytes(excel.encode()!);
                                       await FirebaseConfig.logEvent(

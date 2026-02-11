@@ -8,6 +8,24 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 
+String _dateKey(DateTime dt) {
+  return '${dt.year.toString().padLeft(4, '0')}${dt.month.toString().padLeft(2, '0')}${dt.day.toString().padLeft(2, '0')}';
+}
+
+String _safeDocId(String raw) {
+  return raw.replaceAll(RegExp(r'[^\w\d]'), '_');
+}
+
+String _plantationDocId(String name, String zoneName) {
+  final dateKey = _dateKey(DateTime.now());
+  return _safeDocId('${dateKey}_${name}_${zoneName}');
+}
+
+String _historicalDocId(String name, String zoneName) {
+  final dateKey = _dateKey(DateTime.now());
+  return _safeDocId('${dateKey}_${name}_${zoneName}');
+}
+
 class ZoneManagementPage extends StatefulWidget {
   const ZoneManagementPage({Key? key}) : super(key: key);
 
@@ -62,9 +80,13 @@ class _ZoneManagementPageState extends State<ZoneManagementPage> {
     }
     final zoneName = _zoneController.text.trim();
     if (zoneName.isNotEmpty) {
-      await FirebaseFirestore.instance.collection('zones').add({
-        'name': zoneName,
-      });
+      final zoneDocId = _safeDocId(zoneName);
+      await FirebaseFirestore.instance
+          .collection('zones')
+          .doc(zoneDocId)
+          .set({
+            'name': zoneName,
+          });
       _zoneController.clear();
     }
   }
@@ -114,6 +136,15 @@ class _ZoneManagementPageState extends State<ZoneManagementPage> {
         }
         bool isSuperAdmin =
             userRole == 'super_admin' || userRole == 'superadmin';
+
+        if (!isSuperAdmin) {
+          return Scaffold(
+            appBar: AppBar(title: Text('Plant Management')),
+            body: Center(
+              child: Text('Only super admin can access Plant Management.'),
+            ),
+          );
+        }
 
         return Scaffold(
           appBar: AppBar(title: Text('Plant Management')),
@@ -324,6 +355,12 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
       userId: loggedInMobile,
       details: {'zoneId': widget.zoneId, 'zoneName': widget.zoneName},
     );
+    await FirebaseConfig.logEvent(
+      eventType: 'upload_image_initiated',
+      description: 'Upload image initiated',
+      userId: loggedInMobile,
+      details: {'zoneId': widget.zoneId, 'zoneName': widget.zoneName},
+    );
     if (_pickedImage == null) {
       ScaffoldMessenger.of(
         context,
@@ -354,20 +391,29 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
         );
       } else {
         // Save image path locally for retry/queue
-        await FirebaseFirestore.instance.collection('plantation_records').add({
-          'name': _nameController.text.trim(),
-          'description': _descController.text.trim(),
-          'error': 'Image upload failed. Please try again later.',
-          'height': _heightController.text.trim(),
-          'biomass': _biomassController.text.trim(),
-          'specificLeafArea': _slaController.text.trim(),
-          'longevity': _longevityController.text.trim(),
-          'leafLitterQuality': _leafLitterQualityController.text.trim(),
-          'zoneId': widget.zoneId,
-          'zoneName': widget.zoneName,
-          'timestamp': DateTime.now().toIso8601String(),
-          'localImagePath': _pickedImage?.path,
-        });
+        final docId = _plantationDocId(
+          _nameController.text.trim().isEmpty
+              ? 'unknown'
+              : _nameController.text.trim(),
+          widget.zoneName,
+        );
+        await FirebaseFirestore.instance
+            .collection('plantation_records')
+            .doc(docId)
+            .set({
+              'name': _nameController.text.trim(),
+              'description': _descController.text.trim(),
+              'error': 'Image upload failed. Please try again later.',
+              'height': _heightController.text.trim(),
+              'biomass': _biomassController.text.trim(),
+              'specificLeafArea': _slaController.text.trim(),
+              'longevity': _longevityController.text.trim(),
+              'leafLitterQuality': _leafLitterQualityController.text.trim(),
+              'zoneId': widget.zoneId,
+              'zoneName': widget.zoneName,
+              'timestamp': DateTime.now().toIso8601String(),
+              'localImagePath': _pickedImage?.path,
+            });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Image upload failed. Please try again later.')),
         );
@@ -386,20 +432,29 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
       }
     } catch (e) {
       // Save image path locally for retry/queue
-      await FirebaseFirestore.instance.collection('plantation_records').add({
-        'name': _nameController.text.trim(),
-        'description': _descController.text.trim(),
-        'error': 'Image upload failed. Please try again later.',
-        'height': _heightController.text.trim(),
-        'biomass': _biomassController.text.trim(),
-        'specificLeafArea': _slaController.text.trim(),
-        'longevity': _longevityController.text.trim(),
-        'leafLitterQuality': _leafLitterQualityController.text.trim(),
-        'zoneId': widget.zoneId,
-        'zoneName': widget.zoneName,
-        'timestamp': DateTime.now().toIso8601String(),
-        'localImagePath': _pickedImage?.path,
-      });
+      final docId = _plantationDocId(
+        _nameController.text.trim().isEmpty
+            ? 'unknown'
+            : _nameController.text.trim(),
+        widget.zoneName,
+      );
+      await FirebaseFirestore.instance
+          .collection('plantation_records')
+          .doc(docId)
+          .set({
+            'name': _nameController.text.trim(),
+            'description': _descController.text.trim(),
+            'error': 'Image upload failed. Please try again later.',
+            'height': _heightController.text.trim(),
+            'biomass': _biomassController.text.trim(),
+            'specificLeafArea': _slaController.text.trim(),
+            'longevity': _longevityController.text.trim(),
+            'leafLitterQuality': _leafLitterQualityController.text.trim(),
+            'zoneId': widget.zoneId,
+            'zoneName': widget.zoneName,
+            'timestamp': DateTime.now().toIso8601String(),
+            'localImagePath': _pickedImage?.path,
+          });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Image upload failed. Please try again later.')));
@@ -446,20 +501,24 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
     }
     if (name.isNotEmpty) {
       try {
-        await FirebaseFirestore.instance.collection('plantation_records').add({
-          'name': name,
-          'description': desc,
-          'error': error,
-          'height': height,
-          'biomass': biomass,
-          'specificLeafArea': sla,
-          'longevity': longevity,
-          'leafLitterQuality': leafLitterQuality,
-          'zoneId': widget.zoneId,
-          'zoneName': widget.zoneName,
-          'timestamp': DateTime.now().toIso8601String(),
-          'localImagePath': localImagePath,
-        });
+        final docId = _plantationDocId(name, widget.zoneName);
+        await FirebaseFirestore.instance
+            .collection('plantation_records')
+            .doc(docId)
+            .set({
+              'name': name,
+              'description': desc,
+              'error': error,
+              'height': height,
+              'biomass': biomass,
+              'specificLeafArea': sla,
+              'longevity': longevity,
+              'leafLitterQuality': leafLitterQuality,
+              'zoneId': widget.zoneId,
+              'zoneName': widget.zoneName,
+              'timestamp': DateTime.now().toIso8601String(),
+              'localImagePath': localImagePath,
+            });
         _nameController.clear();
         _descController.clear();
         _errorController.clear();
@@ -917,6 +976,12 @@ class _PlantListPageState extends State<PlantListPage> {
                               userId: loggedInMobile,
                               details: {'plantId': plantId},
                             );
+                            await FirebaseConfig.logEvent(
+                              eventType: 'plant_edit_upload_initiated',
+                              description: 'Plant edit upload initiated',
+                              userId: loggedInMobile,
+                              details: {'plantId': plantId},
+                            );
                             if (pickedImage == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1042,9 +1107,17 @@ class _PlantListPageState extends State<PlantListPage> {
                       historicalData['originalId'] = plantId;
                       historicalData['editedAt'] =
                           DateTime.now().toIso8601String();
+                      final historyName =
+                          (historicalData['name'] ?? '').toString();
+                      final historyZone =
+                          (historicalData['zoneName'] ?? widget.zoneName)
+                              .toString();
+                      final historyDocId =
+                          _historicalDocId(historyName, historyZone);
                       await FirebaseFirestore.instance
                           .collection('HistoricalData')
-                          .add(historicalData);
+                          .doc(historyDocId)
+                          .set(historicalData);
 
                       // Get the zone name for the selected zoneId
                       final zoneSnapshot = await FirebaseFirestore.instance
@@ -1254,6 +1327,11 @@ class _PlantListPageState extends State<PlantListPage> {
                               description: 'Plant add upload clicked',
                               userId: loggedInMobile,
                             );
+                            await FirebaseConfig.logEvent(
+                              eventType: 'plant_add_upload_initiated',
+                              description: 'Plant add upload initiated',
+                              userId: loggedInMobile,
+                            );
                             if (pickedImage == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -1373,20 +1451,27 @@ class _PlantListPageState extends State<PlantListPage> {
                     }
 
                     try {
-                      await FirebaseFirestore.instance.collection('plantation_records').add({
-                        'name': name,
-                        'description': descController.text.trim(),
-                        'error': errorController.text.trim().isEmpty ? 'NA' : errorController.text.trim(),
-                        'height': heightController.text.trim(),
-                        'biomass': biomassController.text.trim(),
-                        'specificLeafArea': slaController.text.trim(),
-                        'longevity': longevityController.text.trim(),
-                        'leafLitterQuality': leafLitterQualityController.text.trim(),
-                        'zoneId': widget.zoneId,
-                        'zoneName': widget.zoneName,
-                        'timestamp': DateTime.now().toIso8601String(),
-                        'localImagePath': localImagePath,
-                      });
+                      final docId = _plantationDocId(name, widget.zoneName);
+                      await FirebaseFirestore.instance
+                          .collection('plantation_records')
+                          .doc(docId)
+                          .set({
+                            'name': name,
+                            'description': descController.text.trim(),
+                            'error':
+                                errorController.text.trim().isEmpty
+                                    ? 'NA'
+                                    : errorController.text.trim(),
+                            'height': heightController.text.trim(),
+                            'biomass': biomassController.text.trim(),
+                            'specificLeafArea': slaController.text.trim(),
+                            'longevity': longevityController.text.trim(),
+                            'leafLitterQuality': leafLitterQualityController.text.trim(),
+                            'zoneId': widget.zoneId,
+                            'zoneName': widget.zoneName,
+                            'timestamp': DateTime.now().toIso8601String(),
+                            'localImagePath': localImagePath,
+                          });
                       
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(

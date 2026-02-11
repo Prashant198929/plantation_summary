@@ -87,14 +87,54 @@ class AttendanceSupport {
     }
   }
 
+  static const List<String> _monthNames = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  static String monthYearKey(DateTime date) {
+    return '${_monthNames[date.month - 1]}_${date.year}';
+  }
+
+  static List<String> monthYearKeysBetween(DateTime start, DateTime end) {
+    final keys = <String>[];
+    DateTime cursor = DateTime(start.year, start.month);
+    final endMonth = DateTime(end.year, end.month);
+    while (cursor.isBefore(endMonth) || cursor == endMonth) {
+      keys.add(monthYearKey(cursor));
+      cursor = DateTime(cursor.year, cursor.month + 1);
+    }
+    return keys;
+  }
+
+  static String _normalizeZone(String? zone) {
+    if (zone == null) return '';
+    final trimmed = zone.toString().trim().toLowerCase();
+    if (trimmed.isEmpty) return '';
+    final digits = RegExp(r'(\d+)').firstMatch(trimmed)?.group(1) ?? '';
+    return digits.isNotEmpty ? digits : trimmed;
+  }
+
   static Future<List<Map<String, dynamic>>> fetchZoneUsers(
     FirebaseFirestore? secondaryFirestore,
     String? currentZone,
   ) async {
     if (secondaryFirestore == null || currentZone == null) return [];
     try {
-      final zoneQuery = (currentZone ?? '').trim().toLowerCase();
-      print('Querying users for zone: "$zoneQuery"');
+      final zoneQueryRaw = (currentZone ?? '').trim();
+      final zoneQueryLower = zoneQueryRaw.toLowerCase();
+      final zoneQueryNormalized = _normalizeZone(zoneQueryRaw);
+      print('Querying users for zone: "$zoneQueryRaw"');
       final snapshot = await secondaryFirestore!.collection('users').get();
       print('Fetched ${snapshot.docs.length} users from Firestore');
       for (final doc in snapshot.docs) {
@@ -104,11 +144,14 @@ class AttendanceSupport {
       final users = snapshot.docs
           .where((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            final userZone = (data['zone'] ?? '')
-                .toString()
-                .trim()
-                .toLowerCase();
-            return userZone == zoneQuery;
+            final userZoneRaw = (data['zone'] ?? '').toString().trim();
+            final userZoneLower = userZoneRaw.toLowerCase();
+            final userZoneNormalized = _normalizeZone(userZoneRaw);
+            if (zoneQueryNormalized.isNotEmpty &&
+                userZoneNormalized.isNotEmpty) {
+              return userZoneNormalized == zoneQueryNormalized;
+            }
+            return userZoneLower == zoneQueryLower;
           })
           .map((doc) {
             final data = doc.data() as Map<String, dynamic>;
@@ -120,7 +163,7 @@ class AttendanceSupport {
             };
           })
           .toList();
-      print('Matched ${users.length} users for zone "$zoneQuery"');
+      print('Matched ${users.length} users for zone "$zoneQueryRaw"');
       return users;
     } catch (e) {
       print('Error fetching zone users: $e');

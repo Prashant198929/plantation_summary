@@ -12,6 +12,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  static const String _customZoneValue = '__custom__';
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _surnameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
@@ -21,17 +23,50 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  final List<String> _zones = [];
+  String? _selectedZoneChoice;
+
   Map<String, String> _errors = {};
 
   @override
   void initState() {
     super.initState();
+    _fetchZones();
     Future.microtask(() async {
       await FirebaseConfig.logEvent(
         eventType: 'register_page_opened',
         description: 'Register page opened',
       );
     });
+  }
+
+  Future<void> _fetchZones() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('zones')
+        .orderBy('name', descending: false)
+        .get();
+    final zones = snapshot.docs
+        .map((doc) => doc['name']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
+    setState(() {
+      _zones
+        ..clear()
+        ..addAll(zones);
+      if (_zones.isNotEmpty && _selectedZoneChoice == null) {
+        _selectedZoneChoice = _zones.first;
+        _zoneController.text = _selectedZoneChoice!;
+      }
+    });
+  }
+
+  String _normalizeZoneInput(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return trimmed;
+    if (trimmed.toLowerCase().startsWith('zone')) {
+      return trimmed;
+    }
+    return 'Zone $trimmed';
   }
 
   bool _validateName(String value) =>
@@ -60,7 +95,11 @@ class _RegisterPageState extends State<RegisterPage> {
     String mobile = _mobileController.text.replaceAll(RegExp(r'\D'), '');
     String baithakNo = _baithakNoController.text.trim();
     String baithakPlace = _baithakPlaceController.text.trim();
-    String zone = _zoneController.text.trim();
+    final chosenZone = _selectedZoneChoice == _customZoneValue
+        ? _zoneController.text
+        : _selectedZoneChoice ?? _zoneController.text;
+    String zone = _normalizeZoneInput(chosenZone);
+    _zoneController.text = zone;
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
@@ -133,8 +172,29 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     try {
+      final zoneSnapshot = await FirebaseFirestore.instance
+          .collection('zones')
+          .where('name', isEqualTo: zone)
+          .limit(1)
+          .get();
+      if (zoneSnapshot.docs.isEmpty) {
+        final zoneDocId = zone.replaceAll(RegExp(r'[^\w\d]'), '_');
+        await FirebaseFirestore.instance
+            .collection('zones')
+            .doc(zoneDocId)
+            .set({'name': zone});
+        setState(() {
+          _zones.add(zone);
+        });
+      }
+
+      final now = DateTime.now();
+      final dateKey =
+          '${now.year.toString().padLeft(4, '0')}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+      final rawUserId = '${dateKey}_${name}_${mobile}_$zone';
+      final userDocId = rawUserId.replaceAll(RegExp(r'[^\w\d]'), '_');
       String? fcmToken = await FirebaseMessaging.instance.getToken();
-      await FirebaseFirestore.instance.collection('users').add({
+      await FirebaseFirestore.instance.collection('users').doc(userDocId).set({
         'name': name,
         'surname': surname,
         'mobile': mobile,
@@ -305,24 +365,66 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Text(_errors['baithakPlace']!, style: TextStyle(color: Colors.red)),
                 ),
               SizedBox(height: 12),
-              TextField(
-                controller: _zoneController,
-                decoration: InputDecoration(labelText: 'Zone'),
-                onChanged: (val) {
-                  setState(() {
-                    if (!_validateZone(val)) {
-                      _errors['zone'] = 'Zone should be numeric';
-                    } else {
-                      _errors.remove('zone');
-                    }
-                  });
-                  if (val.isNotEmpty && !val.toLowerCase().startsWith('zone')) {
-                    _zoneController.text = 'Zone $val';
-                    _zoneController.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _zoneController.text.length),
-                    );
-                  }
-                },
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedZoneChoice,
+                    decoration: InputDecoration(labelText: 'Zone'),
+                    items: [
+                      ..._zones.map(
+                        (zone) => DropdownMenuItem(
+                          value: zone,
+                          child: Text(zone),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: _customZoneValue,
+                        child: Text('Other'),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      setState(() {
+                        _selectedZoneChoice = val;
+                        if (val != null && val != _customZoneValue) {
+                          _zoneController.text = val;
+                          if (!_validateZone(val)) {
+                            _errors['zone'] = 'Zone should be numeric';
+                          } else {
+                            _errors.remove('zone');
+                          }
+                        }
+                      });
+                    },
+                  ),
+                  if (_selectedZoneChoice == _customZoneValue)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: TextField(
+                        controller: _zoneController,
+                        decoration: InputDecoration(
+                          labelText: 'Custom Zone',
+                        ),
+                        onChanged: (val) {
+                          final normalized = _normalizeZoneInput(val);
+                          setState(() {
+                            _zoneController.text = normalized;
+                            _zoneController.selection =
+                                TextSelection.fromPosition(
+                              TextPosition(
+                                offset: _zoneController.text.length,
+                              ),
+                            );
+                            if (!_validateZone(normalized)) {
+                              _errors['zone'] = 'Zone should be numeric';
+                            } else {
+                              _errors.remove('zone');
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                ],
               ),
               if (_errors['zone'] != null)
                 Padding(
