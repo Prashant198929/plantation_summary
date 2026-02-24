@@ -394,11 +394,19 @@ class _PlantationFormState extends State<PlantationForm> {
                                         final totalZones = zoneDocs.length;
                                         final plantNames = plantDocs
                                             .map((doc) {
-                                              final data = doc.data() as Map<String, dynamic>;
+                                              final data = doc.data()
+                                                  as Map<String, dynamic>;
                                               final name = data['name'];
-                                              return name?.toString();
+                                              return name
+                                                  ?.toString()
+                                                  .trim()
+                                                  .toLowerCase();
                                             })
-                                            .where((name) => name != null && name is String && name.isNotEmpty)
+                                            .where(
+                                              (name) =>
+                                                  name != null &&
+                                                  name.isNotEmpty,
+                                            )
                                             .toSet()
                                             .toList();
                                         return Row(

@@ -179,6 +179,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
                 'sentAt': FieldValue.serverTimestamp(),
                 'registrationToken': null,
                 'status': 'missing_token',
+                'senderMobile': loggedInMobile,
+                'fromPhone': loggedInMobile,
+                'toPhone': phone,
               });
         } catch (_) {}
         continue;
@@ -217,6 +220,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
               'registrationToken': targetToken,
               'statusCode': response.statusCode,
               'responseBody': response.body,
+              'senderMobile': loggedInMobile,
+              'fromPhone': loggedInMobile,
+              'toPhone': phone,
             });
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -242,6 +248,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
                 'registrationToken': targetToken,
                 'status': 'error',
                 'error': e.toString(),
+                'senderMobile': loggedInMobile,
+                'fromPhone': loggedInMobile,
+                'toPhone': phone,
               });
         } catch (_) {}
       }
@@ -303,29 +312,46 @@ class _BroadcastPageState extends State<BroadcastPage> {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: Text('Received Notifications'),
-                    content: FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _getLocalNotifications(),
+                    content: StreamBuilder<QuerySnapshot>(
+                      stream: loggedInMobile == null
+                          ? const Stream.empty()
+                          : FirebaseFirestore.instance
+                              .collection('broadcasts')
+                              .where('toPhone', isEqualTo: loggedInMobile)
+                              .snapshots(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return Center(child: CircularProgressIndicator());
                         }
-                        final notifications = snapshot.data ?? [];
-                        if (notifications.isEmpty) {
-                          return SizedBox.shrink();
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return Text('No received notifications.');
                         }
+                        final received = snapshot.data!.docs.toList()
+                          ..sort((a, b) {
+                            final aTime = (a.data() as Map<String, dynamic>)['sentAt'];
+                            final bTime = (b.data() as Map<String, dynamic>)['sentAt'];
+                            final aDate = aTime is Timestamp ? aTime.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
+                            final bDate = bTime is Timestamp ? bTime.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
+                            return bDate.compareTo(aDate);
+                          });
                         return Container(
                           width: double.maxFinite,
                           child: ListView.builder(
                             shrinkWrap: true,
-                            itemCount: notifications.length,
+                            itemCount: received.length,
                             itemBuilder: (context, index) {
-                              final data = notifications[index];
+                              final doc = received[index];
+                              final data = doc.data() as Map<String, dynamic>;
                               return ListTile(
-                                title: Text(data['title'] ?? ''),
-                                subtitle: Text(data['body'] ?? ''),
+                                title: Text(data['message'] ?? ''),
+                                subtitle: Text('From: ${data['fromPhone'] ?? ''}'),
                                 trailing: Text(
-                                  data['receivedAt'] ?? '',
+                                  data['sentAt'] != null
+                                      ? (data['sentAt'] as Timestamp)
+                                            .toDate()
+                                            .toString()
+                                      : '',
                                   style: TextStyle(fontSize: 10),
                                 ),
                               );
@@ -355,10 +381,12 @@ class _BroadcastPageState extends State<BroadcastPage> {
                   builder: (context) => AlertDialog(
                     title: Text('Sent Notifications'),
                     content: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('broadcasts')
-                          .orderBy('sentAt', descending: true)
-                          .snapshots(),
+                      stream: loggedInMobile == null
+                          ? const Stream.empty()
+                          : FirebaseFirestore.instance
+                              .collection('broadcasts')
+                              .where('fromPhone', isEqualTo: loggedInMobile)
+                              .snapshots(),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -367,7 +395,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
                         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                           return Text('No sent notifications.');
                         }
-                        final sent = snapshot.data!.docs;
+                        final sent = snapshot.data!.docs.toList()
+                          ..sort((a, b) {
+                            final aTime = (a.data() as Map<String, dynamic>)['sentAt'];
+                            final bTime = (b.data() as Map<String, dynamic>)['sentAt'];
+                            final aDate = aTime is Timestamp ? aTime.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
+                            final bDate = bTime is Timestamp ? bTime.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
+                            return bDate.compareTo(aDate);
+                          });
                         return Container(
                           width: double.maxFinite,
                           child: ListView.builder(
