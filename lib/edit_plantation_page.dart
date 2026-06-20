@@ -4,6 +4,13 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'firebase_config.dart';
+import 'upload_queue_service.dart';
+
+String _safeUploadUserId(String plantName, String plantNumber, String zoneName) {
+  final raw = '${plantName}_${plantNumber}_${zoneName}';
+  final safe = raw.replaceAll(RegExp(r'[^\w\d]'), '_');
+  return safe.isEmpty ? 'unknown' : safe;
+}
 
 class EditPlantationPage extends StatefulWidget {
   final String docId;
@@ -20,11 +27,16 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _errorController;
+  late TextEditingController _girthController;
+  late TextEditingController _heightController;
+  late TextEditingController _stumpController;
+  late TextEditingController _longitudeController;
+  late TextEditingController _latitudeController;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.data['name'] ?? '');
+    _nameController = TextEditingController(text: widget.data['plantName'] ?? '');
     Future.microtask(() async {
       await FirebaseConfig.logEvent(
         eventType: 'edit_plantation_opened',
@@ -33,9 +45,20 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
       );
     });
     _descriptionController = TextEditingController(
-      text: widget.data['description'] ?? '',
+      text: widget.data['plantNumber'] ?? '',
     );
-    _errorController = TextEditingController(text: widget.data['error'] ?? '');
+    _errorController = TextEditingController(
+      text: widget.data['healthStatus'] ?? '',
+    );
+    _girthController = TextEditingController(text: widget.data['girth'] ?? '');
+    _heightController = TextEditingController(text: widget.data['height'] ?? '');
+    _stumpController = TextEditingController(text: widget.data['stump'] ?? '');
+    _longitudeController = TextEditingController(
+      text: widget.data['longitude'] ?? '',
+    );
+    _latitudeController = TextEditingController(
+      text: widget.data['latitude'] ?? '',
+    );
   }
 
   Future<void> _updateRecord() async {
@@ -48,19 +71,26 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
         .collection('plantation_records')
         .doc(widget.docId)
         .update({
-          'name': _nameController.text,
-          'description': _descriptionController.text,
-          'error': _errorController.text,
+          'plantName': _nameController.text,
+          'plantNumber': _descriptionController.text,
+          'healthStatus': _errorController.text,
+          'girth': _girthController.text,
+          'height': _heightController.text,
+          'stump': _stumpController.text,
+          'longitude': _longitudeController.text,
+          'latitude': _latitudeController.text,
           'timestamp': DateTime.now().toIso8601String(),
+          'Planted_On':
+              widget.data['Planted_On'] ?? DateTime.now().toIso8601String(),
         });
     await FirebaseConfig.logEvent(
       eventType: 'plantation_updated',
       description: 'Plantation record updated',
       details: {
         'docId': widget.docId,
-        'name': _nameController.text,
-        'description': _descriptionController.text,
-        'error': _errorController.text,
+        'plantName': _nameController.text,
+        'plantNumber': _descriptionController.text,
+        'healthStatus': _errorController.text,
       },
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -83,7 +113,7 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Name',
+                    labelText: 'Plant Name',
                     fillColor: Colors.white,
                     filled: true,
                   ),
@@ -99,9 +129,54 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
                 ),
                 const SizedBox(height: 20),
                 TextField(
+                  controller: _girthController,
+                  decoration: InputDecoration(
+                    labelText: 'Girth',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _heightController,
+                  decoration: InputDecoration(
+                    labelText: 'Height',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _stumpController,
+                  decoration: InputDecoration(
+                    labelText: 'Stump',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _longitudeController,
+                  decoration: InputDecoration(
+                    labelText: 'Longitude',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _latitudeController,
+                  decoration: InputDecoration(
+                    labelText: 'Latitude',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
                   controller: _errorController,
                   decoration: InputDecoration(
-                    labelText: 'Error',
+                    labelText: 'Health Status',
                     fillColor: Colors.white,
                     filled: true,
                   ),
@@ -148,9 +223,9 @@ class _ImagePickerAndUploadSectionState
   bool _uploading = false;
   String? _uploadedUrl;
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(source: source);
     if (image != null) {
       setState(() {
         _pickedImage = image;
@@ -168,6 +243,11 @@ class _ImagePickerAndUploadSectionState
     setState(() {
       _uploading = true;
     });
+    final userId = _safeUploadUserId(
+      widget.nameController.text,
+      widget.data['plantNumber']?.toString() ?? '',
+      widget.data['zoneName']?.toString() ?? '',
+    );
     try {
       var request = http.MultipartRequest(
         'POST',
@@ -176,10 +256,12 @@ class _ImagePickerAndUploadSectionState
       request.files.add(
         await http.MultipartFile.fromPath('file', _pickedImage!.path),
       );
-      final userId = widget.nameController.text.isEmpty
-          ? 'unknown'
-          : widget.nameController.text;
       request.fields['userId'] = userId;
+      await FirebaseConfig.logEvent(
+        eventType: 'edit_plantation_upload_initiated',
+        description: 'Edit plantation image upload initiated',
+        details: {'docId': widget.docId, 'userId': userId},
+      );
       var response = await request.send();
       if (response.statusCode == 200) {
         final filename = _pickedImage!.name;
@@ -188,10 +270,28 @@ class _ImagePickerAndUploadSectionState
         setState(() {
           _uploadedUrl = imageUrl;
         });
+        await FirebaseConfig.logEvent(
+          eventType: 'edit_plantation_upload_success',
+          description: 'Edit plantation image uploaded successfully',
+          details: {
+            'docId': widget.docId,
+            'imageUrl': imageUrl,
+            'statusCode': response.statusCode,
+          },
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
         );
       } else {
+        await FirebaseConfig.logEvent(
+          eventType: 'edit_plantation_upload_failed',
+          description: 'Edit plantation image upload failed',
+          details: {
+            'docId': widget.docId,
+            'statusCode': response.statusCode,
+            'error': 'HTTP ${response.statusCode}',
+          },
+        );
         // Save image path locally for retry/queue
         await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
           'localImagePath': _pickedImage!.path,
@@ -202,14 +302,36 @@ class _ImagePickerAndUploadSectionState
         );
       }
     } catch (e) {
-      // Save image path locally for retry/queue
-      await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
-        'localImagePath': _pickedImage?.path,
-        'error': 'Image upload failed. Please try again later.',
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Image upload failed. Please try again later.')));
+      // Add to upload queue for retry
+      if (_pickedImage != null) {
+        final uploadItem = UploadItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          imagePath: _pickedImage!.path,
+          userId: userId,
+          docId: widget.docId,
+          createdAt: DateTime.now(),
+        );
+        await UploadQueueService.addToQueue(uploadItem);
+        
+        await FirebaseConfig.logEvent(
+          eventType: 'edit_plantation_upload_error',
+          description: 'Edit plantation upload error - queued for retry',
+          details: {
+            'docId': widget.docId,
+            'queueId': uploadItem.id,
+            'error': e.toString(),
+          },
+        );
+        
+        await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
+          'localImagePath': _pickedImage!.path,
+          'error': 'Image queued for upload when connection is available.',
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Image queued for upload when connection is available.')),
+        );
+      }
     } finally {
       setState(() {
         _uploading = false;
@@ -224,16 +346,30 @@ class _ImagePickerAndUploadSectionState
       children: [
         Row(
           children: [
-            ElevatedButton(
+            ElevatedButton.icon(
               onPressed: () async {
                 await FirebaseConfig.logEvent(
                   eventType: 'edit_plantation_pick_image',
-                  description: 'Edit plantation pick image',
+                  description: 'Edit plantation pick image (gallery)',
                   details: {'docId': widget.docId},
                 );
-                _pickImage();
+                _pickImage(ImageSource.gallery);
               },
-              child: const Text('Pick Image'),
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Gallery'),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await FirebaseConfig.logEvent(
+                  eventType: 'edit_plantation_pick_image',
+                  description: 'Edit plantation pick image (camera)',
+                  details: {'docId': widget.docId},
+                );
+                _pickImage(ImageSource.camera);
+              },
+              icon: const Icon(Icons.camera_alt),
+              label: const Text('Camera'),
             ),
             const SizedBox(width: 16),
             _pickedImage != null

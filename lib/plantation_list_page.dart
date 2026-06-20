@@ -7,6 +7,12 @@ import 'package:plantation_summary/main.dart';
 import 'dart:async';
 import 'firebase_config.dart';
 
+String _safeUploadUserId(String plantName, String plantNumber, String zoneName) {
+  final raw = '${plantName}_${plantNumber}_${zoneName}';
+  final safe = raw.replaceAll(RegExp(r'[^\w\d]'), '_');
+  return safe.isEmpty ? 'unknown' : safe;
+}
+
 class PlantationListPage extends StatefulWidget {
   const PlantationListPage({Key? key}) : super(key: key);
 
@@ -137,15 +143,15 @@ class _PlantationListPageState extends State<PlantationListPage> {
                     final plantData = plant.data() as Map<String, dynamic>;
                     return ListTile(
                       tileColor:
-                          plantData['error'] != null &&
-                              plantData['error'] != 'NA'
+                          plantData['healthStatus'] != null &&
+                              plantData['healthStatus'] != 'NA'
                           ? Colors.red[100]
                           : null,
                       title: Row(
                         children: [
                           Expanded(
                             child: Text(
-                              '${plantData['name'] ?? ''} (${plantData['zoneName'] ?? ''})',
+                              '${plantData['plantName'] ?? ''} (${plantData['zoneName'] ?? ''})',
                             ),
                           ),
                           ElevatedButton(
@@ -155,7 +161,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                 description: 'Plantation record viewed',
                                 details: {
                                   'docId': plant.id,
-                                  'name': plantData['name'],
+                                  'plantName': plantData['plantName'],
                                   'zone': plantData['zoneName'],
                                 },
                               );
@@ -163,7 +169,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                 context: context,
                                 builder: (context) => AlertDialog(
                                   title: Text(
-                                    plantData['name'] ?? 'Plant Details',
+                                    plantData['plantName'] ?? 'Plant Details',
                                   ),
                                   content: SingleChildScrollView(
                                     child: Column(
@@ -171,17 +177,25 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        if (plantData['description'] != null)
+                                        if (plantData['plantNumber'] != null)
                                           Text(
-                                            'Plant Number: ${plantData['description']}',
+                                            'Plant Number: ${plantData['plantNumber']}',
                                             style: TextStyle(
                                               color: Colors.black87,
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
-                                        if (plantData['error'] != null)
+                                        if (plantData['Planted_On'] != null)
                                           Text(
-                                            'Issue: ${plantData['error']}',
+                                            'Planted On: ${plantData['Planted_On']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        if (plantData['healthStatus'] != null)
+                                          Text(
+                                            'Health Status: ${plantData['healthStatus']}',
                                             style: TextStyle(
                                               color: Colors.red[800],
                                               fontWeight: FontWeight.w600,
@@ -190,6 +204,34 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                         if (plantData['height'] != null)
                                           Text(
                                             'Height: ${plantData['height']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['girth'] != null)
+                                          Text(
+                                            'Girth: ${plantData['girth']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['stump'] != null)
+                                          Text(
+                                            'Stump: ${plantData['stump']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['longitude'] != null)
+                                          Text(
+                                            'Longitude: ${plantData['longitude']}',
+                                            style: TextStyle(
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        if (plantData['latitude'] != null)
+                                          Text(
+                                            'Latitude: ${plantData['latitude']}',
                                             style: TextStyle(
                                               color: Colors.black87,
                                             ),
@@ -224,7 +266,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                               color: Colors.black87,
                                             ),
                                           ),
-                                        if (plantData['localImagePath'] != null)
+                                        if (plantData['localImagePath'] != null && File(plantData['localImagePath']).existsSync())
                                           Padding(
                                             padding: const EdgeInsets.only(
                                               top: 8.0,
@@ -234,6 +276,8 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                               width: 80,
                                               height: 80,
                                               fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  const Icon(Icons.broken_image, size: 80),
                                             ),
                                           ),
                                       ],
@@ -267,7 +311,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                 userId: loggedInMobile,
                                 details: {
                                   'docId': plant.id,
-                                  'name': plantData['name'],
+                                  'plantName': plantData['plantName'],
                                   'zone': plantData['zoneName'],
                                 },
                               );
@@ -282,7 +326,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                               }
                               final docId = plant.id;
                               final nameController = TextEditingController(
-                                text: plantData['name'] ?? '',
+                                text: plantData['plantName'] ?? '',
                               );
                               final zoneController = TextEditingController(
                                 text: plantData['zoneName'] ?? '',
@@ -290,13 +334,28 @@ class _PlantationListPageState extends State<PlantationListPage> {
                               String? selectedZoneId = plantData['zoneId'];
                               final descriptionController =
                                   TextEditingController(
-                                    text: plantData['description'] ?? '',
+                                    text: plantData['plantNumber'] ?? '',
                                   );
                               final errorController = TextEditingController(
-                                text: plantData['error'] ?? '',
+                                text: plantData['healthStatus'] ?? '',
                               );
                               final heightController = TextEditingController(
                                 text: plantData['height']?.toString() ?? '',
+                              );
+                              final girthController = TextEditingController(
+                                text: plantData['girth']?.toString() ?? '',
+                              );
+                              final stumpController = TextEditingController(
+                                text: plantData['stump']?.toString() ?? '',
+                              );
+                              final longitudeController = TextEditingController(
+                                text: plantData['longitude']?.toString() ?? '',
+                              );
+                              final latitudeController = TextEditingController(
+                                text: plantData['latitude']?.toString() ?? '',
+                              );
+                              final plantedOnController = TextEditingController(
+                                text: plantData['Planted_On'] ?? '',
                               );
                               final biomassController = TextEditingController(
                                 text: plantData['biomass']?.toString() ?? '',
@@ -332,7 +391,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                               TextField(
                                                 controller: nameController,
                                                 decoration: InputDecoration(
-                                                  labelText: 'Name',
+                                                  labelText: 'Plant Name',
                                                   fillColor: Color(0xFFE8F5E9),
                                                   filled: true,
                                                   labelStyle: TextStyle(color: Colors.black87),
@@ -451,6 +510,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                     [
                                                       'Pest',
                                                       'Disease',
+                                                      'Infected',
                                                       'Water Stress',
                                                       'Nutrient Deficiency',
                                                       'Physical Damage',
@@ -462,7 +522,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                     ? errorController.text
                                                     : null,
                                                 decoration: InputDecoration(
-                                                  labelText: 'Issue',
+                                                  labelText: 'Health Status',
                                                   fillColor: Color(0xFFE8F5E9),
                                                   filled: true,
                                                   labelStyle: TextStyle(color: Colors.black87),
@@ -480,6 +540,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                     [
                                                           'Pest',
                                                           'Disease',
+                                                          'Infected',
                                                           'Water Stress',
                                                           'Nutrient Deficiency',
                                                           'Physical Damage',
@@ -506,6 +567,196 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                 controller: heightController,
                                                 decoration: InputDecoration(
                                                   labelText: 'Height',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: girthController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Girth',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: stumpController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Stump',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: longitudeController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Longitude',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: latitudeController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Latitude',
+                                                  fillColor: Color(0xFFE8F5E9),
+                                                  filled: true,
+                                                  labelStyle: TextStyle(
+                                                    color: Colors.black87,
+                                                  ),
+                                                  enabledBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFFFFB300,
+                                                          ),
+                                                          width: 1.5,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                  focusedBorder:
+                                                      OutlineInputBorder(
+                                                        borderSide: BorderSide(
+                                                          color: Color(
+                                                            0xFF388E3C,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              TextField(
+                                                controller: plantedOnController,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Planted On',
                                                   fillColor: Color(0xFFE8F5E9),
                                                   filled: true,
                                                   labelStyle: TextStyle(
@@ -661,34 +912,48 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                 children: [
                                                   Row(
                                                     children: [
-                                                      ElevatedButton(
+                                                      ElevatedButton.icon(
                                                         onPressed: () async {
                                                           await FirebaseConfig.logEvent(
                                                             eventType: 'plantation_edit_pick_image',
-                                                            description: 'Plantation edit pick image',
+                                                            description: 'Plantation edit pick image (gallery)',
                                                             userId: loggedInMobile,
                                                             details: {'docId': plant.id},
                                                           );
-                                                          final ImagePicker
-                                                          picker =
-                                                              ImagePicker();
-                                                          final XFile?
-                                                          image = await picker
-                                                              .pickImage(
-                                                                source:
-                                                                    ImageSource
-                                                                        .gallery,
-                                                              );
+                                                          final ImagePicker picker = ImagePicker();
+                                                          final XFile? image = await picker.pickImage(
+                                                            source: ImageSource.gallery,
+                                                          );
                                                           if (image != null) {
                                                             setState(() {
-                                                              pickedImage =
-                                                                  image;
+                                                              pickedImage = image;
                                                             });
                                                           }
                                                         },
-                                                        child: const Text(
-                                                          'Pick Image',
-                                                        ),
+                                                        icon: const Icon(Icons.photo_library),
+                                                        label: const Text('Gallery'),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      ElevatedButton.icon(
+                                                        onPressed: () async {
+                                                          await FirebaseConfig.logEvent(
+                                                            eventType: 'plantation_edit_pick_image',
+                                                            description: 'Plantation edit pick image (camera)',
+                                                            userId: loggedInMobile,
+                                                            details: {'docId': plant.id},
+                                                          );
+                                                          final ImagePicker picker = ImagePicker();
+                                                          final XFile? image = await picker.pickImage(
+                                                            source: ImageSource.camera,
+                                                          );
+                                                          if (image != null) {
+                                                            setState(() {
+                                                              pickedImage = image;
+                                                            });
+                                                          }
+                                                        },
+                                                        icon: const Icon(Icons.camera_alt),
+                                                        label: const Text('Camera'),
                                                       ),
                                                       const SizedBox(width: 16),
                                                       pickedImage != null
@@ -704,8 +969,8 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                                     .cover,
                                                               ),
                                                             )
-                                                          : (plantData['localImagePath'] !=
-                                                                    null
+                                                          : (plantData['localImagePath'] != null &&
+                                                                    File(plantData['localImagePath']).existsSync()
                                                                 ? SizedBox(
                                                                     width: 80,
                                                                     height: 80,
@@ -713,8 +978,9 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                                       File(
                                                                         plantData['localImagePath'],
                                                                       ),
-                                                                      fit: BoxFit
-                                                                          .cover,
+                                                                      fit: BoxFit.cover,
+                                                                      errorBuilder: (context, error, stackTrace) =>
+                                                                          const Icon(Icons.broken_image, size: 80),
                                                                     ),
                                                                   )
                                                                 : const Text(
@@ -781,16 +1047,27 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                         pickedImage!.path,
                                                       ),
                                                     );
+                                                    final userId =
+                                                        _safeUploadUserId(
+                                                      nameController.text,
+                                                      descriptionController.text,
+                                                      zoneController.text,
+                                                    );
                                                     request.fields['userId'] =
-                                                        nameController
-                                                            .text
-                                                            .isEmpty
-                                                        ? 'unknown'
-                                                        : nameController.text;
+                                                        userId;
                                                     var response;
                                                     try {
                                                       response = await request.send().timeout(const Duration(seconds: 10));
                                                     } on TimeoutException catch (_) {
+                                                      await FirebaseConfig.logEvent(
+                                                        eventType: 'plantation_list_upload_timeout',
+                                                        description: 'Plantation list upload timeout',
+                                                        userId: loggedInMobile,
+                                                        details: {
+                                                          'docId': plant.id,
+                                                          'error': 'Server timeout',
+                                                        },
+                                                      );
                                                       showDialog(
                                                         context: context,
                                                         builder: (context) => AlertDialog(
@@ -810,6 +1087,15 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                       );
                                                       return;
                                                     } catch (e) {
+                                                      await FirebaseConfig.logEvent(
+                                                        eventType: 'plantation_list_upload_error',
+                                                        description: 'Plantation list upload error',
+                                                        userId: loggedInMobile,
+                                                        details: {
+                                                          'docId': plant.id,
+                                                          'error': e.toString(),
+                                                        },
+                                                      );
                                                       showDialog(
                                                         context: context,
                                                         builder: (context) => AlertDialog(
@@ -831,11 +1117,24 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                     }
                                                     if (response != null && response.statusCode == 200) {
                                                       final filename = pickedImage!.name;
-                                                      final userId = nameController.text.isEmpty
-                                                          ? 'unknown'
-                                                          : nameController.text;
+                                                      final userId =
+                                                          _safeUploadUserId(
+                                                        nameController.text,
+                                                        descriptionController.text,
+                                                        zoneController.text,
+                                                      );
                                                       final imageUrl =
                                                           'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
+                                                      await FirebaseConfig.logEvent(
+                                                        eventType: 'plantation_list_upload_success',
+                                                        description: 'Plantation list image uploaded successfully',
+                                                        userId: loggedInMobile,
+                                                        details: {
+                                                          'docId': plant.id,
+                                                          'imageUrl': imageUrl,
+                                                          'statusCode': response.statusCode,
+                                                        },
+                                                      );
                                                       showDialog(
                                                         context: context,
                                                         builder: (context) => AlertDialog(
@@ -854,6 +1153,16 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                         ),
                                                       );
                                                     } else if (response != null) {
+                                                      await FirebaseConfig.logEvent(
+                                                        eventType: 'plantation_list_upload_failed',
+                                                        description: 'Plantation list image upload failed',
+                                                        userId: loggedInMobile,
+                                                        details: {
+                                                          'docId': plant.id,
+                                                          'statusCode': response.statusCode,
+                                                          'error': 'HTTP ${response.statusCode}',
+                                                        },
+                                                      );
                                                       showDialog(
                                                         context: context,
                                                         builder: (context) => AlertDialog(
@@ -873,6 +1182,15 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                       );
                                                     }
                                                   } catch (e) {
+                                                    await FirebaseConfig.logEvent(
+                                                      eventType: 'plantation_list_upload_exception',
+                                                      description: 'Plantation list upload exception',
+                                                      userId: loggedInMobile,
+                                                      details: {
+                                                        'docId': plant.id,
+                                                        'error': e.toString(),
+                                                      },
+                                                    );
                                                     showDialog(
                                                       context: context,
                                                       builder: (context) =>
@@ -929,13 +1247,18 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                               );
                                               Map<String, dynamic>
                                               updateData = {
-                                                'name': nameController.text,
+                                                'plantName': nameController.text,
                                                 'zoneId': selectedZoneId,
                                                 'zoneName': zoneController.text,
-                                                'description':
+                                                'plantNumber':
                                                     descriptionController.text,
-                                                'error': errorController.text,
+                                                'healthStatus':
+                                                    errorController.text,
                                                 'height': heightController.text,
+                                                'girth': girthController.text,
+                                                'stump': stumpController.text,
+                                                'longitude': longitudeController.text,
+                                                'latitude': latitudeController.text,
                                                 'biomass':
                                                     biomassController.text,
                                                 'specificLeafArea':
@@ -944,6 +1267,12 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                     longevityController.text,
                                                 'leafLitterQuality':
                                                     leafLitterController.text,
+                                                'Planted_On':
+                                                    plantedOnController.text
+                                                            .trim()
+                                                            .isEmpty
+                                                        ? DateTime.now().toIso8601String()
+                                                        : plantedOnController.text.trim(),
                                               };
                                               if (pickedImage != null) {
                                                 updateData['localImagePath'] =
@@ -960,7 +1289,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                 historicalData['editedAt'] =
                                                     DateTime.now().toIso8601String();
                                                 final historyName =
-                                                    (historicalData['name'] ?? '')
+                                                    (historicalData['plantName'] ?? '')
                                                         .toString();
                                                 final historyZone =
                                                     (historicalData['zoneName'] ??
@@ -989,10 +1318,10 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                   description: 'Plantation record updated from list',
                                                   details: {
                                                     'docId': docId,
-                                                    'name': nameController.text,
+                                                    'plantName': nameController.text,
                                                     'zone': zoneController.text,
-                                                    'description': descriptionController.text,
-                                                    'error': errorController.text,
+                                                    'plantNumber': descriptionController.text,
+                                                    'healthStatus': errorController.text,
                                                   },
                                                 );
                                                 print(

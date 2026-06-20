@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'firebase_config.dart';
 import 'firebase_options.dart';
+import 'upload_queue_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -105,6 +106,9 @@ void main() async {
       await query.docs.first.reference.update({'fcmToken': currentToken});
     }
   }
+
+  // Initialize upload queue service
+  await UploadQueueService.initialize();
 
   runApp(const MyApp());
 }
@@ -396,7 +400,7 @@ class _PlantationFormState extends State<PlantationForm> {
                                             .map((doc) {
                                               final data = doc.data()
                                                   as Map<String, dynamic>;
-                                              final name = data['name'];
+                                              final name = data['plantName'];
                                               return name
                                                   ?.toString()
                                                   .trim()
@@ -641,28 +645,31 @@ class FilteredPlantListPage extends StatelessWidget {
               final plantData = plant.data() as Map<String, dynamic>;
               return ListTile(
                 tileColor:
-                    plantData['error'] != null && plantData['error'] != 'NA'
-                    ? Colors.red[100]
-                    : null,
+                    plantData['healthStatus'] != null &&
+                            plantData['healthStatus'] != 'NA'
+                        ? Colors.red[100]
+                        : null,
                 title: Row(
                   children: [
-                    Expanded(child: Text(plantData['name'] ?? '')),
+                    Expanded(child: Text(plantData['plantName'] ?? '')),
                     ElevatedButton(
                       onPressed: () {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: Text(plantData['name'] ?? 'Plant Details'),
+                            title: Text(plantData['plantName'] ?? 'Plant Details'),
                             content: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (plantData['description'] != null)
+                                if (plantData['plantNumber'] != null)
                                   Text(
-                                    'Plant Number: ${plantData['description']}',
+                                    'Plant Number: ${plantData['plantNumber']}',
                                   ),
-                                if (plantData['error'] != null)
-                                  Text('Issue: ${plantData['error']}'),
+                                if (plantData['healthStatus'] != null)
+                                  Text(
+                                    'Health Status: ${plantData['healthStatus']}',
+                                  ),
                                 if (plantData['height'] != null)
                                   Text('Height: ${plantData['height']}'),
                                 if (plantData['biomass'] != null)

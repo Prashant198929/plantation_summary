@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
+import 'upload_queue_service.dart';
 
 String _dateKey(DateTime dt) {
   return '${dt.year.toString().padLeft(4, '0')}${dt.month.toString().padLeft(2, '0')}${dt.day.toString().padLeft(2, '0')}';
@@ -24,6 +25,12 @@ String _plantationDocId(String name, String zoneName) {
 String _historicalDocId(String name, String zoneName) {
   final dateKey = _dateKey(DateTime.now());
   return _safeDocId('${dateKey}_${name}_${zoneName}');
+}
+
+String _uploadUserId(String plantName, String plantNumber, String zoneName) {
+  final raw = '${plantName}_${plantNumber}_${zoneName}';
+  final safe = _safeDocId(raw);
+  return safe.isEmpty ? 'unknown' : safe;
 }
 
 class ZoneManagementPage extends StatefulWidget {
@@ -207,8 +214,8 @@ class _ZoneManagementPageState extends State<ZoneManagementPage> {
                                 if (data is! Map<String, dynamic>) return false;
                                 return data.containsKey('zoneId') &&
                                     data['zoneId'] == zoneId &&
-                                    data['error'] != null &&
-                                    data['error'] != 'NA';
+                                    data['healthStatus'] != null &&
+                                    data['healthStatus'] != 'NA';
                               });
                               highlightZone = plants.isNotEmpty;
                             }
@@ -280,6 +287,10 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
   final TextEditingController _descController = TextEditingController();
   final TextEditingController _errorController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _girthController = TextEditingController();
+  final TextEditingController _stumpController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
+  final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _biomassController = TextEditingController();
   final TextEditingController _slaController = TextEditingController();
   final TextEditingController _longevityController = TextEditingController();
@@ -333,14 +344,14 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
     });
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     await FirebaseConfig.logEvent(
       eventType: 'pick_image_clicked',
       description: 'Pick image clicked',
       userId: loggedInMobile,
-      details: {'zoneId': widget.zoneId, 'zoneName': widget.zoneName},
+      details: {'zoneId': widget.zoneId, 'zoneName': widget.zoneName, 'source': source.name},
     );
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await _picker.pickImage(source: source);
     if (image != null) {
       setState(() {
         _pickedImage = image;
@@ -375,36 +386,106 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
       request.files.add(
         await http.MultipartFile.fromPath('file', _pickedImage!.path),
       );
-      request.fields['userId'] = _nameController.text.trim().isEmpty
-          ? 'unknown'
-          : _nameController.text.trim();
+      final uploadUserId = _uploadUserId(
+        _nameController.text.trim(),
+        _descController.text.trim(),
+        widget.zoneName,
+      );
+      request.fields['userId'] = uploadUserId;
       var response = await request.send();
       if (response.statusCode == 200) {
         final filename = _pickedImage!.name;
-        final userId = _nameController.text.trim().isEmpty
-            ? 'unknown'
-            : _nameController.text.trim();
+        final userId = _uploadUserId(
+          _nameController.text.trim(),
+          _descController.text.trim(),
+          widget.zoneName,
+        );
         final imageUrl =
             'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
         );
       } else {
-        // Save image path locally for retry/queue
-        final docId = _plantationDocId(
-          _nameController.text.trim().isEmpty
-              ? 'unknown'
-              : _nameController.text.trim(),
+        // Add to upload queue for retry
+        if (_pickedImage != null) {
+          final userId = _uploadUserId(
+            _nameController.text.trim(),
+            _descController.text.trim(),
+            widget.zoneName,
+          );
+          final docId = _plantationDocId(userId, widget.zoneName);
+          final uploadItem = UploadItem(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            imagePath: _pickedImage!.path,
+            userId: userId,
+            docId: docId,
+            createdAt: DateTime.now(),
+          );
+          await UploadQueueService.addToQueue(uploadItem);
+          
+          await FirebaseFirestore.instance
+              .collection('plantation_records')
+              .doc(docId)
+              .set({
+                'plantName': _nameController.text.trim(),
+                'plantNumber': _descController.text.trim(),
+                'healthStatus': _errorController.text.trim().isEmpty
+                    ? 'NA'
+                    : _errorController.text.trim(),
+                'uploadStatus': 'queued',
+                'height': _heightController.text.trim(),
+                'girth': _girthController.text.trim(),
+                'stump': _stumpController.text.trim(),
+                'longitude': _longitudeController.text.trim(),
+                'latitude': _latitudeController.text.trim(),
+                'biomass': _biomassController.text.trim(),
+                'specificLeafArea': _slaController.text.trim(),
+                'longevity': _longevityController.text.trim(),
+                'leafLitterQuality': _leafLitterQualityController.text.trim(),
+                'zoneId': widget.zoneId,
+                'zoneName': widget.zoneName,
+                'timestamp': DateTime.now().toIso8601String(),
+                'Planted_On': DateTime.now().toIso8601String(),
+                'localImagePath': _pickedImage!.path,
+              });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Image queued for upload when connection is available.')),
+          );
+        }
+      }
+    } catch (e) {
+      // Add to upload queue for retry
+      if (_pickedImage != null) {
+        final userId = _uploadUserId(
+          _nameController.text.trim(),
+          _descController.text.trim(),
           widget.zoneName,
         );
+        final docId = _plantationDocId(userId, widget.zoneName);
+        final uploadItem = UploadItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          imagePath: _pickedImage!.path,
+          userId: userId,
+          docId: docId,
+          createdAt: DateTime.now(),
+        );
+        await UploadQueueService.addToQueue(uploadItem);
+        
         await FirebaseFirestore.instance
             .collection('plantation_records')
             .doc(docId)
             .set({
-              'name': _nameController.text.trim(),
-              'description': _descController.text.trim(),
-              'error': 'Image upload failed. Please try again later.',
+              'plantName': _nameController.text.trim(),
+              'plantNumber': _descController.text.trim(),
+              'healthStatus': _errorController.text.trim().isEmpty
+                  ? 'NA'
+                  : _errorController.text.trim(),
+              'uploadStatus': 'queued',
               'height': _heightController.text.trim(),
+              'girth': _girthController.text.trim(),
+              'stump': _stumpController.text.trim(),
+              'longitude': _longitudeController.text.trim(),
+              'latitude': _latitudeController.text.trim(),
               'biomass': _biomassController.text.trim(),
               'specificLeafArea': _slaController.text.trim(),
               'longevity': _longevityController.text.trim(),
@@ -412,52 +493,13 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
               'zoneId': widget.zoneId,
               'zoneName': widget.zoneName,
               'timestamp': DateTime.now().toIso8601String(),
-              'localImagePath': _pickedImage?.path,
+              'Planted_On': DateTime.now().toIso8601String(),
+              'localImagePath': _pickedImage!.path,
             });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed. Please try again later.')),
-        );
-        await FirebaseConfig.initialize();
-        await FirebaseConfig.logEvent(
-          eventType: 'image_upload_failed',
-          description: 'Image upload failed',
-          userId: _nameController.text.trim(),
-          details: {
-            'zoneId': widget.zoneId,
-            'zoneName': widget.zoneName,
-            'localImagePath': _pickedImage?.path,
-          },
-          collectionName: 'Register_Logs',
+          SnackBar(content: Text('Image queued for upload when connection is available.')),
         );
       }
-    } catch (e) {
-      // Save image path locally for retry/queue
-      final docId = _plantationDocId(
-        _nameController.text.trim().isEmpty
-            ? 'unknown'
-            : _nameController.text.trim(),
-        widget.zoneName,
-      );
-      await FirebaseFirestore.instance
-          .collection('plantation_records')
-          .doc(docId)
-          .set({
-            'name': _nameController.text.trim(),
-            'description': _descController.text.trim(),
-            'error': 'Image upload failed. Please try again later.',
-            'height': _heightController.text.trim(),
-            'biomass': _biomassController.text.trim(),
-            'specificLeafArea': _slaController.text.trim(),
-            'longevity': _longevityController.text.trim(),
-            'leafLitterQuality': _leafLitterQualityController.text.trim(),
-            'zoneId': widget.zoneId,
-            'zoneName': widget.zoneName,
-            'timestamp': DateTime.now().toIso8601String(),
-            'localImagePath': _pickedImage?.path,
-          });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Image upload failed. Please try again later.')));
     }
   }
 
@@ -478,6 +520,10 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
     final desc = _descController.text.trim();
     final error = _errorController.text.trim();
     final height = _heightController.text.trim();
+    final girth = _girthController.text.trim();
+    final stump = _stumpController.text.trim();
+    final longitude = _longitudeController.text.trim();
+    final latitude = _latitudeController.text.trim();
     final biomass = _biomassController.text.trim();
     final sla = _slaController.text.trim();
     final longevity = _longevityController.text.trim();
@@ -485,9 +531,7 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
     String? localImagePath;
     if (_pickedImage != null) {
       final file = File(_pickedImage!.path);
-      final userId = _nameController.text.trim().isEmpty
-          ? 'unknown'
-          : _nameController.text.trim();
+      final userId = _uploadUserId(name, desc, widget.zoneName);
       final appDocDir = await getApplicationDocumentsDirectory();
       final localDir = Directory('${appDocDir.path}/images/$userId');
       if (!await localDir.exists()) {
@@ -506,10 +550,14 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
             .collection('plantation_records')
             .doc(docId)
             .set({
-              'name': name,
-              'description': desc,
-              'error': error,
+              'plantName': name,
+              'plantNumber': desc,
+              'healthStatus': error,
               'height': height,
+              'girth': girth,
+              'stump': stump,
+              'longitude': longitude,
+              'latitude': latitude,
               'biomass': biomass,
               'specificLeafArea': sla,
               'longevity': longevity,
@@ -517,12 +565,17 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
               'zoneId': widget.zoneId,
               'zoneName': widget.zoneName,
               'timestamp': DateTime.now().toIso8601String(),
+              'Planted_On': DateTime.now().toIso8601String(),
               'localImagePath': localImagePath,
             });
         _nameController.clear();
         _descController.clear();
         _errorController.clear();
         _heightController.clear();
+        _girthController.clear();
+        _stumpController.clear();
+        _longitudeController.clear();
+        _latitudeController.clear();
         _biomassController.clear();
         _slaController.clear();
         _longevityController.clear();
@@ -603,6 +656,7 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
                         value: [
                           'Pest',
                           'Disease',
+                          'Infected',
                           'Water Stress',
                           'Nutrient Deficiency',
                           'Physical Damage',
@@ -614,6 +668,7 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
                         items: [
                           'Pest',
                           'Disease',
+                          'Infected',
                           'Water Stress',
                           'Nutrient Deficiency',
                           'Physical Damage',
@@ -629,7 +684,7 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
                           _errorController.text = value ?? '';
                         },
                         decoration: InputDecoration(
-                          labelText: 'Issue',
+                          labelText: 'Health Status',
                           border: OutlineInputBorder(),
                         ),
                       ),
@@ -638,6 +693,38 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
                         controller: _heightController,
                         decoration: InputDecoration(
                           labelText: 'Height',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _girthController,
+                        decoration: InputDecoration(
+                          labelText: 'Girth',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _stumpController,
+                        decoration: InputDecoration(
+                          labelText: 'Stump',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _longitudeController,
+                        decoration: InputDecoration(
+                          labelText: 'Longitude',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _latitudeController,
+                        decoration: InputDecoration(
+                          labelText: 'Latitude',
                           border: OutlineInputBorder(),
                         ),
                       ),
@@ -677,9 +764,16 @@ class _ZoneDetailPageState extends State<ZoneDetailPage> {
                       // Image picker field
                       Row(
                         children: [
-                          ElevatedButton(
-                            onPressed: _pickImage,
-                            child: const Text('Pick Image'),
+                          ElevatedButton.icon(
+                            onPressed: () => _pickImage(ImageSource.gallery),
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Gallery'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: () => _pickImage(ImageSource.camera),
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Camera'),
                           ),
                           const SizedBox(width: 16),
                           _pickedImage != null
@@ -778,10 +872,19 @@ class _PlantListPageState extends State<PlantListPage> {
   // - [ ] Test the implementation to ensure it works as expected
 
   void _showEditPlantDialog(String plantId, Map<String, dynamic> plantData) {
-    final nameController = TextEditingController(text: plantData['name'] ?? '');
-    final descController = TextEditingController(text: plantData['description'] ?? '');
-    final errorController = TextEditingController(text: plantData['error'] ?? '');
+    final nameController = TextEditingController(text: plantData['plantName'] ?? '');
+    final descController = TextEditingController(text: plantData['plantNumber'] ?? '');
+    final errorController = TextEditingController(
+      text: plantData['healthStatus'] ?? '',
+    );
     final heightController = TextEditingController(text: plantData['height'] ?? '');
+    final girthController = TextEditingController(text: plantData['girth'] ?? '');
+    final stumpController = TextEditingController(text: plantData['stump'] ?? '');
+    final longitudeController = TextEditingController(text: plantData['longitude'] ?? '');
+    final latitudeController = TextEditingController(text: plantData['latitude'] ?? '');
+    final plantedOnController = TextEditingController(
+      text: plantData['Planted_On'] ?? '',
+    );
     final biomassController = TextEditingController(text: plantData['biomass'] ?? '');
     final slaController = TextEditingController(text: plantData['specificLeafArea'] ?? '');
     final longevityController = TextEditingController(text: plantData['longevity'] ?? '');
@@ -817,30 +920,32 @@ class _PlantListPageState extends State<PlantListPage> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      value: [
-                        'Pest',
-                        'Disease',
-                        'Water Stress',
-                        'Nutrient Deficiency',
-                        'Physical Damage',
-                        'Other',
-                        'NA'
-                      ].contains(errorController.text)
+                        value: [
+                          'Pest',
+                          'Disease',
+                          'Infected',
+                          'Water Stress',
+                          'Nutrient Deficiency',
+                          'Physical Damage',
+                          'Other',
+                          'NA'
+                        ].contains(errorController.text)
                           ? errorController.text
                           : null,
                       decoration: InputDecoration(
-                        labelText: 'Issue',
+                        labelText: 'Health Status',
                         border: OutlineInputBorder(),
                       ),
-                      items: [
-                        'Pest',
-                        'Disease',
-                        'Water Stress',
-                        'Nutrient Deficiency',
-                        'Physical Damage',
-                        'Other',
-                        'NA'
-                      ]
+                        items: [
+                          'Pest',
+                          'Disease',
+                          'Infected',
+                          'Water Stress',
+                          'Nutrient Deficiency',
+                          'Physical Damage',
+                          'Other',
+                          'NA'
+                        ]
                           .map(
                             (issue) => DropdownMenuItem(
                               value: issue,
@@ -857,6 +962,46 @@ class _PlantListPageState extends State<PlantListPage> {
                       controller: heightController,
                       decoration: InputDecoration(
                         labelText: 'Height',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: girthController,
+                      decoration: InputDecoration(
+                        labelText: 'Girth',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: stumpController,
+                      decoration: InputDecoration(
+                        labelText: 'Stump',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: longitudeController,
+                      decoration: InputDecoration(
+                        labelText: 'Longitude',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: latitudeController,
+                      decoration: InputDecoration(
+                        labelText: 'Latitude',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: plantedOnController,
+                      decoration: InputDecoration(
+                        labelText: 'Planted On',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -925,11 +1070,11 @@ class _PlantListPageState extends State<PlantListPage> {
                       children: [
                         Row(
                           children: [
-                            ElevatedButton(
+                            ElevatedButton.icon(
                               onPressed: () async {
                                 await FirebaseConfig.logEvent(
                                   eventType: 'plant_edit_pick_image',
-                                  description: 'Plant edit pick image',
+                                  description: 'Plant edit pick image (gallery)',
                                   userId: loggedInMobile,
                                   details: {'plantId': plantId},
                                 );
@@ -943,7 +1088,30 @@ class _PlantListPageState extends State<PlantListPage> {
                                   });
                                 }
                               },
-                              child: const Text('Pick Image'),
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_edit_pick_image',
+                                  description: 'Plant edit pick image (camera)',
+                                  userId: loggedInMobile,
+                                  details: {'plantId': plantId},
+                                );
+                                final ImagePicker picker = ImagePicker();
+                                final XFile? image = await picker.pickImage(
+                                  source: ImageSource.camera,
+                                );
+                                if (image != null) {
+                                  setState(() {
+                                    pickedImage = image;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
                             ),
                             const SizedBox(width: 16),
                             pickedImage != null
@@ -955,13 +1123,16 @@ class _PlantListPageState extends State<PlantListPage> {
                                       fit: BoxFit.cover,
                                     ),
                                   )
-                                : (plantData['localImagePath'] != null
+                                : (plantData['localImagePath'] != null &&
+                                        File(plantData['localImagePath']).existsSync()
                                     ? SizedBox(
                                         width: 80,
                                         height: 80,
                                         child: Image.file(
                                           File(plantData['localImagePath']),
                                           fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              const Icon(Icons.broken_image, size: 80),
                                         ),
                                       )
                                     : const Text('No image selected')),
@@ -1001,34 +1172,89 @@ class _PlantListPageState extends State<PlantListPage> {
                                   pickedImage!.path,
                                 ),
                               );
-                              request.fields['userId'] = nameController.text.trim().isEmpty
-                                  ? 'unknown'
-                                  : nameController.text.trim();
+                              final uploadUserId = _uploadUserId(
+                                nameController.text.trim(),
+                                descController.text.trim(),
+                                widget.zoneName,
+                              );
+                              request.fields['userId'] = uploadUserId;
                               var response;
                               try {
                                 response = await request.send().timeout(const Duration(seconds: 10));
                               } on TimeoutException catch (_) {
+                                // Add to upload queue for retry
+                                final userId = _uploadUserId(
+                                  nameController.text.trim(),
+                                  descController.text.trim(),
+                                  widget.zoneName,
+                                );
+                                final docId = _plantationDocId(userId, widget.zoneName);
+                                final uploadItem = UploadItem(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  imagePath: pickedImage!.path,
+                                  userId: userId,
+                                  docId: docId,
+                                  createdAt: DateTime.now(),
+                                );
+                                await UploadQueueService.addToQueue(uploadItem);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: Server not responding. Please try again later.')),
+                                  SnackBar(content: Text('Server not responding. Image queued for upload when connection is available.')),
                                 );
                                 return;
                               } catch (e) {
+                                // Add to upload queue for retry
+                                final userId = _uploadUserId(
+                                  nameController.text.trim(),
+                                  descController.text.trim(),
+                                  widget.zoneName,
+                                );
+                                final docId = _plantationDocId(userId, widget.zoneName);
+                                final uploadItem = UploadItem(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  imagePath: pickedImage!.path,
+                                  userId: userId,
+                                  docId: docId,
+                                  createdAt: DateTime.now(),
+                                );
+                                await UploadQueueService.addToQueue(uploadItem);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error uploading image: $e')),
+                                  SnackBar(content: Text('Error uploading image. Queued for retry when connection is available.')),
                                 );
                                 return;
                               }
                               if (response != null && response.statusCode == 200) {
                                 final filename = pickedImage!.name;
-                                final userId = nameController.text.trim().isEmpty
-                                    ? 'unknown'
-                                    : nameController.text.trim();
+                                final userId = _uploadUserId(
+                                  nameController.text.trim(),
+                                  descController.text.trim(),
+                                  widget.zoneName,
+                                );
                                 final imageUrl =
                                     'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_edit_upload_success',
+                                  description: 'Plant edit image uploaded successfully',
+                                  userId: loggedInMobile,
+                                  details: {
+                                    'plantId': plantId,
+                                    'imageUrl': imageUrl,
+                                    'statusCode': response.statusCode,
+                                  },
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
                                 );
                               } else if (response != null) {
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_edit_upload_failed',
+                                  description: 'Plant edit image upload failed',
+                                  userId: loggedInMobile,
+                                  details: {
+                                    'plantId': plantId,
+                                    'statusCode': response.statusCode,
+                                    'error': 'HTTP ${response.statusCode}',
+                                  },
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Upload failed: ${response.statusCode}'),
@@ -1087,9 +1313,11 @@ class _PlantListPageState extends State<PlantListPage> {
                     String? localImagePath = plantData['localImagePath'];
                     if (pickedImage != null) {
                       final file = File(pickedImage!.path);
-                      final userId = nameController.text.trim().isEmpty
-                          ? 'unknown'
-                          : nameController.text.trim();
+                      final userId = _uploadUserId(
+                        nameController.text.trim(),
+                        descController.text.trim(),
+                        widget.zoneName,
+                      );
                       final appDocDir = await getApplicationDocumentsDirectory();
                       final localDir = Directory('${appDocDir.path}/images/$userId');
                       if (!await localDir.exists()) {
@@ -1108,7 +1336,7 @@ class _PlantListPageState extends State<PlantListPage> {
                       historicalData['editedAt'] =
                           DateTime.now().toIso8601String();
                       final historyName =
-                          (historicalData['name'] ?? '').toString();
+                          (historicalData['plantName'] ?? '').toString();
                       final historyZone =
                           (historicalData['zoneName'] ?? widget.zoneName)
                               .toString();
@@ -1127,16 +1355,23 @@ class _PlantListPageState extends State<PlantListPage> {
                       final zoneName = zoneSnapshot.data()?['name'] ?? '';
                       
                       await FirebaseFirestore.instance.collection('plantation_records').doc(plantId).update({
-                        'name': name,
-                        'description': descController.text.trim(),
-                        'error': errorController.text.trim().isEmpty ? 'NA' : errorController.text.trim(),
+                        'plantName': name,
+                        'plantNumber': descController.text.trim(),
+                        'healthStatus': errorController.text.trim().isEmpty ? 'NA' : errorController.text.trim(),
                         'height': heightController.text.trim(),
+                        'girth': girthController.text.trim(),
+                        'stump': stumpController.text.trim(),
+                        'longitude': longitudeController.text.trim(),
+                        'latitude': latitudeController.text.trim(),
                         'biomass': biomassController.text.trim(),
                         'specificLeafArea': slaController.text.trim(),
                         'longevity': longevityController.text.trim(),
                         'leafLitterQuality': leafLitterQualityController.text.trim(),
                         'zoneId': plantData['zoneId'], // Update zoneId
                         'zoneName': zoneName, // Update zoneName
+                        'Planted_On': plantedOnController.text.trim().isEmpty
+                            ? DateTime.now().toIso8601String()
+                            : plantedOnController.text.trim(),
                         'localImagePath': localImagePath,
                       });
                       
@@ -1171,6 +1406,10 @@ class _PlantListPageState extends State<PlantListPage> {
     final descController = TextEditingController();
     final errorController = TextEditingController();
     final heightController = TextEditingController();
+    final girthController = TextEditingController();
+    final stumpController = TextEditingController();
+    final longitudeController = TextEditingController();
+    final latitudeController = TextEditingController();
     final biomassController = TextEditingController();
     final slaController = TextEditingController();
     final longevityController = TextEditingController();
@@ -1208,6 +1447,7 @@ class _PlantListPageState extends State<PlantListPage> {
                       value: [
                         'Pest',
                         'Disease',
+                        'Infected',
                         'Water Stress',
                         'Nutrient Deficiency',
                         'Physical Damage',
@@ -1217,12 +1457,13 @@ class _PlantListPageState extends State<PlantListPage> {
                           ? errorController.text
                           : null,
                       decoration: InputDecoration(
-                        labelText: 'Issue',
+                        labelText: 'Health Status',
                         border: OutlineInputBorder(),
                       ),
                       items: [
                         'Pest',
                         'Disease',
+                        'Infected',
                         'Water Stress',
                         'Nutrient Deficiency',
                         'Physical Damage',
@@ -1245,6 +1486,38 @@ class _PlantListPageState extends State<PlantListPage> {
                       controller: heightController,
                       decoration: InputDecoration(
                         labelText: 'Height',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: girthController,
+                      decoration: InputDecoration(
+                        labelText: 'Girth',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: stumpController,
+                      decoration: InputDecoration(
+                        labelText: 'Stump',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: longitudeController,
+                      decoration: InputDecoration(
+                        labelText: 'Longitude',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: latitudeController,
+                      decoration: InputDecoration(
+                        labelText: 'Latitude',
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -1287,11 +1560,11 @@ class _PlantListPageState extends State<PlantListPage> {
                       children: [
                         Row(
                           children: [
-                            ElevatedButton(
+                            ElevatedButton.icon(
                               onPressed: () async {
                                 await FirebaseConfig.logEvent(
                                   eventType: 'plant_add_pick_image',
-                                  description: 'Plant add pick image',
+                                  description: 'Plant add pick image (gallery)',
                                   userId: loggedInMobile,
                                 );
                                 final ImagePicker picker = ImagePicker();
@@ -1304,7 +1577,29 @@ class _PlantListPageState extends State<PlantListPage> {
                                   });
                                 }
                               },
-                              child: const Text('Pick Image'),
+                              icon: const Icon(Icons.photo_library),
+                              label: const Text('Gallery'),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_add_pick_image',
+                                  description: 'Plant add pick image (camera)',
+                                  userId: loggedInMobile,
+                                );
+                                final ImagePicker picker = ImagePicker();
+                                final XFile? image = await picker.pickImage(
+                                  source: ImageSource.camera,
+                                );
+                                if (image != null) {
+                                  setState(() {
+                                    pickedImage = image;
+                                  });
+                                }
+                              },
+                              icon: const Icon(Icons.camera_alt),
+                              label: const Text('Camera'),
                             ),
                             const SizedBox(width: 16),
                             pickedImage != null
@@ -1351,34 +1646,105 @@ class _PlantListPageState extends State<PlantListPage> {
                                   pickedImage!.path,
                                 ),
                               );
-                              request.fields['userId'] = nameController.text.trim().isEmpty
-                                  ? 'unknown'
-                                  : nameController.text.trim();
+                              final uploadUserId = _uploadUserId(
+                                nameController.text.trim(),
+                                descController.text.trim(),
+                                widget.zoneName,
+                              );
+                              request.fields['userId'] = uploadUserId;
                               var response;
                               try {
                                 response = await request.send().timeout(const Duration(seconds: 10));
                               } on TimeoutException catch (_) {
+                                // Add to upload queue for retry
+                                final userId = _uploadUserId(
+                                  nameController.text.trim(),
+                                  descController.text.trim(),
+                                  widget.zoneName,
+                                );
+                                final docId = _plantationDocId(userId, widget.zoneName);
+                                final uploadItem = UploadItem(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  imagePath: pickedImage!.path,
+                                  userId: userId,
+                                  docId: docId,
+                                  createdAt: DateTime.now(),
+                                );
+                                await UploadQueueService.addToQueue(uploadItem);
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_add_upload_timeout',
+                                  description: 'Plant add upload timeout - queued for retry',
+                                  userId: loggedInMobile,
+                                  details: {
+                                    'queueId': uploadItem.id,
+                                    'error': 'Server timeout',
+                                  },
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: Server not responding. Please try again later.')),
+                                  SnackBar(content: Text('Server not responding. Image queued for upload when connection is available.')),
                                 );
                                 return;
                               } catch (e) {
+                                // Add to upload queue for retry
+                                final userId = _uploadUserId(
+                                  nameController.text.trim(),
+                                  descController.text.trim(),
+                                  widget.zoneName,
+                                );
+                                final docId = _plantationDocId(userId, widget.zoneName);
+                                final uploadItem = UploadItem(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  imagePath: pickedImage!.path,
+                                  userId: userId,
+                                  docId: docId,
+                                  createdAt: DateTime.now(),
+                                );
+                                await UploadQueueService.addToQueue(uploadItem);
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_add_upload_error',
+                                  description: 'Plant add upload error - queued for retry',
+                                  userId: loggedInMobile,
+                                  details: {
+                                    'queueId': uploadItem.id,
+                                    'error': e.toString(),
+                                  },
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error uploading image: $e')),
+                                  SnackBar(content: Text('Error uploading image. Queued for retry when connection is available.')),
                                 );
                                 return;
                               }
                               if (response != null && response.statusCode == 200) {
                                 final filename = pickedImage!.name;
-                                final userId = nameController.text.trim().isEmpty
-                                    ? 'unknown'
-                                    : nameController.text.trim();
+                                final userId = _uploadUserId(
+                                  nameController.text.trim(),
+                                  descController.text.trim(),
+                                  widget.zoneName,
+                                );
                                 final imageUrl =
                                     'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_add_upload_success',
+                                  description: 'Plant add image uploaded successfully',
+                                  userId: loggedInMobile,
+                                  details: {
+                                    'imageUrl': imageUrl,
+                                    'statusCode': response.statusCode,
+                                  },
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
                                 );
                               } else if (response != null) {
+                                await FirebaseConfig.logEvent(
+                                  eventType: 'plant_add_upload_failed',
+                                  description: 'Plant add image upload failed',
+                                  userId: loggedInMobile,
+                                  details: {
+                                    'statusCode': response.statusCode,
+                                    'error': 'HTTP ${response.statusCode}',
+                                  },
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Upload failed: ${response.statusCode}'),
@@ -1435,9 +1801,11 @@ class _PlantListPageState extends State<PlantListPage> {
                     String? localImagePath;
                     if (pickedImage != null) {
                       final file = File(pickedImage!.path);
-                      final userId = nameController.text.trim().isEmpty
-                          ? 'unknown'
-                          : nameController.text.trim();
+                      final userId = _uploadUserId(
+                        nameController.text.trim(),
+                        descController.text.trim(),
+                        widget.zoneName,
+                      );
                       final appDocDir = await getApplicationDocumentsDirectory();
                       final localDir = Directory('${appDocDir.path}/images/$userId');
                       if (!await localDir.exists()) {
@@ -1456,13 +1824,17 @@ class _PlantListPageState extends State<PlantListPage> {
                           .collection('plantation_records')
                           .doc(docId)
                           .set({
-                            'name': name,
-                            'description': descController.text.trim(),
-                            'error':
+                            'plantName': name,
+                            'plantNumber': descController.text.trim(),
+                            'healthStatus':
                                 errorController.text.trim().isEmpty
                                     ? 'NA'
                                     : errorController.text.trim(),
                             'height': heightController.text.trim(),
+                            'girth': girthController.text.trim(),
+                            'stump': stumpController.text.trim(),
+                            'longitude': longitudeController.text.trim(),
+                            'latitude': latitudeController.text.trim(),
                             'biomass': biomassController.text.trim(),
                             'specificLeafArea': slaController.text.trim(),
                             'longevity': longevityController.text.trim(),
@@ -1470,6 +1842,7 @@ class _PlantListPageState extends State<PlantListPage> {
                             'zoneId': widget.zoneId,
                             'zoneName': widget.zoneName,
                             'timestamp': DateTime.now().toIso8601String(),
+                            'Planted_On': DateTime.now().toIso8601String(),
                             'localImagePath': localImagePath,
                           });
                       
@@ -1562,12 +1935,13 @@ class _PlantListPageState extends State<PlantListPage> {
                     final plant = plants[index];
                     final plantData = plant.data() as Map<String, dynamic>;
                     return ListTile(
-                      tileColor: plantData['error'] != null && plantData['error'] != 'NA'
+                      tileColor: plantData['healthStatus'] != null &&
+                              plantData['healthStatus'] != 'NA'
                           ? Colors.red[100]
                           : null,
-                      title: Text(plantData['name'] ?? ''),
+                      title: Text(plantData['plantName'] ?? ''),
                       subtitle: Text(
-                        'Plant Number: ${plantData['description'] ?? ''}\nIssue: ${plantData['error'] ?? ''}',
+                        'Plant Number: ${plantData['plantNumber'] ?? ''}\nHealth Status: ${plantData['healthStatus'] ?? ''}',
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1582,7 +1956,7 @@ class _PlantListPageState extends State<PlantListPage> {
                                   'zoneId': widget.zoneId,
                                   'zoneName': widget.zoneName,
                                   'plantId': plant.id,
-                                  'plantName': plantData['name'],
+                                  'plantName': plantData['plantName'],
                                 },
                               );
                               showDialog(
@@ -1594,15 +1968,22 @@ class _PlantListPageState extends State<PlantListPage> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text('Name: ${plantData['name'] ?? ''}'),
-                                          Text('Plant Number: ${plantData['description'] ?? ''}'),
-                                          Text('Issue: ${plantData['error'] ?? ''}'),
+                                          Text('Plant Name: ${plantData['plantName'] ?? ''}'),
+                                          Text('Plant Number: ${plantData['plantNumber'] ?? ''}'),
+                                          Text('Planted On: ${plantData['Planted_On'] ?? ''}'),
+                                          Text(
+                                            'Health Status: ${plantData['healthStatus'] ?? ''}',
+                                          ),
                                           Text('Height: ${plantData['height'] ?? ''}'),
+                                          Text('Girth: ${plantData['girth'] ?? ''}'),
+                                          Text('Stump: ${plantData['stump'] ?? ''}'),
+                                          Text('Longitude: ${plantData['longitude'] ?? ''}'),
+                                          Text('Latitude: ${plantData['latitude'] ?? ''}'),
                                           Text('Biomass: ${plantData['biomass'] ?? ''}'),
                                           Text('Specific Leaf Area: ${plantData['specificLeafArea'] ?? ''}'),
                                           Text('Longevity: ${plantData['longevity'] ?? ''}'),
                                           Text('Leaf Litter Quality: ${plantData['leafLitterQuality'] ?? ''}'),
-                                          if (plantData['localImagePath'] != null)
+                                          if (plantData['localImagePath'] != null && File(plantData['localImagePath']).existsSync())
                                             Padding(
                                               padding: const EdgeInsets.only(top: 8.0),
                                               child: Image.file(
@@ -1610,6 +1991,8 @@ class _PlantListPageState extends State<PlantListPage> {
                                                 width: 80,
                                                 height: 80,
                                                 fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) =>
+                                                    const Icon(Icons.broken_image, size: 80),
                                               ),
                                             ),
                                         ],
@@ -1650,7 +2033,7 @@ class _PlantListPageState extends State<PlantListPage> {
                                   'zoneId': widget.zoneId,
                                   'zoneName': widget.zoneName,
                                   'plantId': plant.id,
-                                  'plantName': plantData['name'],
+                                  'plantName': plantData['plantName'],
                                 },
                               );
                               _showEditPlantDialog(plant.id, plantData);
@@ -1670,7 +2053,7 @@ class _PlantListPageState extends State<PlantListPage> {
                                   'zoneId': widget.zoneId,
                                   'zoneName': widget.zoneName,
                                   'plantId': plant.id,
-                                  'plantName': plantData['name'],
+                                  'plantName': plantData['plantName'],
                                 },
                               );
                               final confirm = await showDialog<bool>(
@@ -1678,7 +2061,7 @@ class _PlantListPageState extends State<PlantListPage> {
                                 builder: (context) => AlertDialog(
                                   title: Text('Delete Plant'),
                                   content: Text(
-                                    'Are you sure you want to delete ${plantData['name'] ?? 'this plant'}?',
+                                    'Are you sure you want to delete ${plantData['plantName'] ?? 'this plant'}?',
                                   ),
                                   actions: [
                                     TextButton(
