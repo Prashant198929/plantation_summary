@@ -3,23 +3,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'main.dart';
+import 'mobile_encryption_service.dart';
 
 class AttendanceSupport {
   static Future<FirebaseApp?> initializeSecondaryApp(
     FirebaseFirestore? secondaryFirestore,
   ) async {
     if (secondaryFirestore != null) {
-      print('Firebase already initialized, skipping initialization');
+      debugPrint('Firebase already initialized, skipping initialization');
       return null;
     }
     try {
       FirebaseApp? secondaryApp;
-      print('Attempting to get existing Firebase app "hajeri"...');
       try {
         secondaryApp = Firebase.app('hajeri');
-        print('Successfully retrieved hajeri app');
       } catch (e) {
-        print('[INFO] Firebase app "hajeri" not found, initializing new app...');
         secondaryApp = await Firebase.initializeApp(
           name: 'hajeri',
           options: const FirebaseOptions(
@@ -31,11 +29,9 @@ class AttendanceSupport {
           ),
         );
       }
-      print('Initializing Firestore instance...');
       return secondaryApp;
     } catch (e) {
-      print('Error initializing secondary app: $e');
-      print('Stack trace: ${StackTrace.current}');
+      debugPrint('Error initializing secondary app: $e');
       return null;
     }
   }
@@ -45,25 +41,23 @@ class AttendanceSupport {
   ) async {
     if (secondaryFirestore == null) return [];
     try {
-      final query = secondaryFirestore
+      final topicsSnapshot = await secondaryFirestore
           .collection('WorkForm')
-          .orderBy('Topic', descending: false);
-      final topicsSnapshot = await query.get().timeout(Duration(seconds: 10));
-      final topics = topicsSnapshot.docs
-          .map(
-            (doc) => (doc.data() as Map<String, dynamic>)['Topic'] as String?,
-          )
-          .where((topic) => topic != null && topic.isNotEmpty)
+          .orderBy('Topic', descending: false)
+          .get()
+          .timeout(Duration(seconds: 10));
+      return topicsSnapshot.docs
+          .map((doc) => (doc.data())['Topic'] as String?)
+          .where((t) => t != null && t.isNotEmpty)
           .cast<String>()
           .toList();
-      return topics;
     } catch (e) {
-      print('Error fetching topics: $e');
+      debugPrint('Error fetching topics: $e');
       return [];
     }
   }
 
-  static Future<List<String>> fetchPlaces(
+  static Future<List<Map<String, dynamic>>> fetchPlaces(
     FirebaseFirestore? secondaryFirestore,
   ) async {
     if (secondaryFirestore == null) return [];
@@ -72,17 +66,20 @@ class AttendanceSupport {
           .collection('Places')
           .orderBy('PlaceName', descending: false)
           .get();
-      final places = snapshot.docs
-          .map(
-            (doc) =>
-                (doc.data() as Map<String, dynamic>)['PlaceName'] as String?,
-          )
-          .where((placeName) => placeName != null && placeName.isNotEmpty)
-          .cast<String>()
+      return snapshot.docs
+          .map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final placeName = (data['PlaceName'] ?? '') as String;
+            return <String, dynamic>{
+              'placeName': placeName,
+              'locationEn': (data['Location_En'] ?? placeName) as String,
+              'locationMr': (data['Location_Mr'] ?? placeName) as String,
+            };
+          })
+          .where((p) => (p['placeName'] as String).isNotEmpty)
           .toList();
-      return places;
     } catch (e) {
-      print('Error fetching places: $e');
+      debugPrint('Error fetching places: $e');
       return [];
     }
   }
@@ -125,6 +122,18 @@ class AttendanceSupport {
     return digits.isNotEmpty ? digits : trimmed;
   }
 
+  // Some users (e.g. imported from the old SQL data, or custom zone entries
+  // at registration) have an English 'zone' like "Zone 1" with no 'zone_mr'
+  // filled in. Deriving zone_mr from the zone number keeps attendance records
+  // in Marathi instead of leaking the English label through the fallback.
+  static String toMarathiZoneLabel(String zone) {
+    final trimmed = zone.trim();
+    if (trimmed.isEmpty) return '';
+    if (trimmed.startsWith('झोन')) return trimmed;
+    final digits = RegExp(r'(\d+)').firstMatch(trimmed)?.group(1) ?? '';
+    return digits.isNotEmpty ? 'झोन $digits' : trimmed;
+  }
+
   static Future<List<Map<String, dynamic>>> fetchZoneUsers(
     FirebaseFirestore? secondaryFirestore,
     String? currentZone,
@@ -134,13 +143,7 @@ class AttendanceSupport {
       final zoneQueryRaw = (currentZone ?? '').trim();
       final zoneQueryLower = zoneQueryRaw.toLowerCase();
       final zoneQueryNormalized = _normalizeZone(zoneQueryRaw);
-      print('Querying users for zone: "$zoneQueryRaw"');
       final snapshot = await secondaryFirestore!.collection('users').get();
-      print('Fetched ${snapshot.docs.length} users from Firestore');
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        print('User: ${data['name']}, raw zone: "${data['zone']}"');
-      }
       final users = snapshot.docs
           .where((doc) {
             final data = doc.data() as Map<String, dynamic>;
@@ -155,18 +158,34 @@ class AttendanceSupport {
           })
           .map((doc) {
             final data = doc.data() as Map<String, dynamic>;
+            final storedMobile = data['mobile']?.toString();
+            final mobile = storedMobile == null || storedMobile.isEmpty
+                ? ''
+                : (MobileEncryptionService.decrypt(storedMobile) ?? storedMobile);
             return {
-              'uid': doc.id,
+              'uid': data['uid'] ?? doc.id,
               'name': data['name'] ?? '',
-              'mobile': data['mobile'] ?? '',
+              'name_mr': data['name_mr'] ?? '',
+              'mobile': mobile,
               'zone': data['zone'] ?? '',
+              'zone_mr': data['zone_mr'] ?? '',
+              'baithak': data['baithakPlace'] ?? data['baithak'] ?? '',
+              'baithak_mr': data['baithak_mr'] ?? '',
+              'baithak_day': data['baithak_day'] ?? '',
+              'baithak_day_mr': data['baithak_day_mr'] ?? '',
+              'hajeri_kramank': data['baithakNo'] ?? data['hajeri_kramank'] ?? '',
+              'hall': data['hall'] ?? '',
+              'hall_mr': data['hall_mr'] ?? '',
+              'gender': data['gender'] ?? '',
+              'dob': data['dob'] ?? '',
+              'isActive': data['isActive'] ?? true,
             };
           })
           .toList();
-      print('Matched ${users.length} users for zone "$zoneQueryRaw"');
+      debugPrint('Matched ${users.length} users for zone "$zoneQueryRaw"');
       return users;
     } catch (e) {
-      print('Error fetching zone users: $e');
+      debugPrint('Error fetching zone users: $e');
       return [];
     }
   }
@@ -180,7 +199,7 @@ class AttendanceSupport {
         return 'Not Assigned';
       }
     } catch (e) {
-      print('Error fetching user zone: $e');
+      debugPrint('Error fetching user zone: $e');
       return 'Not Assigned';
     }
   }

@@ -1,4 +1,4 @@
-// dart
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -7,7 +7,7 @@ class FirebaseConfig {
   static FirebaseFirestore? _firestore;
 
   static final FirebaseOptions vrukshamojaniattendancelogsOptions = FirebaseOptions(
-    apiKey: 'API_KEY_HERE',
+    apiKey: 'AIzaSyCfCKHjzCuuOTt8dZFJc-VDAPuFrkaaQVY',
     appId: '1:436597351597:android:c7ff2ff0649734e5325224',
     messagingSenderId: '436597351597',
     projectId: 'vrukshamojaniattendancelogs',
@@ -35,22 +35,34 @@ class FirebaseConfig {
     return _firestore!;
   }
 
+  static bool _isErrorEvent(String eventType) {
+    final lower = eventType.toLowerCase();
+    return lower.contains('error') ||
+        lower.contains('failed') ||
+        lower.contains('failure') ||
+        lower.contains('exception');
+  }
+
   static Future<void> logEvent({
     required String eventType,
     required String description,
     String? userId,
     Map<String, dynamic>? details,
     String collectionName = 'Register_Logs',
+    bool isError = false,
+    bool isImportant = false,
   }) async {
-    print('Logging event to Firestore: $eventType, $description, $userId, $details, $collectionName');
-    print('Using Firebase app: ${_app?.name ?? "unknown"}, projectId: ${_app?.options.projectId ?? "unknown"}');
     final now = DateTime.now();
+    final logLine = '[${now.toIso8601String()}] [$eventType] $description | userId: ${userId ?? "unknown"} | details: ${details ?? {}}';
+
+    if (kDebugMode) debugPrint(logLine);
+
+    if (!isError && !isImportant && !_isErrorEvent(eventType)) return;
+
     final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     final logDoc = await firestore.collection(collectionName).doc(dateKey).get();
     String allLogs = logDoc.exists && logDoc.data()?['logs'] is String ? logDoc.data()!['logs'] as String : '';
-    final logLine = '[${now.toIso8601String()}] [$eventType] $description | userId: ${userId ?? "unknown"} | details: ${details ?? {}}';
     allLogs += logLine + '\n';
     await firestore.collection(collectionName).doc(dateKey).set({'logs': allLogs});
-    print(logLine);
   }
 }

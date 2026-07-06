@@ -20,17 +20,32 @@ dependencies:
   image_picker: ^1.0.7
   firebase_storage: ^11.6.7
   path_provider: ^2.1.2
+  connectivity_plus: ^6.0.5
+  flutter_background_service: ^5.0.10
+  geolocator: ^12.0.0
+  cached_network_image: ^3.3.1
   cupertino_icons: ^1.0.8
   excel: ^4.0.6
+  share_plus: ^9.0.0
   flutter_html: ^3.0.0
   flutter_svg: ^2.0.7
+  pointycastle: ^3.7.3
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
   assets:
     - assets/zone_images/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/logo.png"

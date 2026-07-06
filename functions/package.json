@@ -1,0 +1,13 @@
+{
+  "name": "plantation-summary-functions",
+  "description": "Cloud Functions for plantation_summary broadcast notifications",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^4.9.0"
+  },
+  "private": true
+}

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Plantation Summary</string>
+	<string>वृक्षारोपण</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Location permissions for GPS functionality -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to automatically capture GPS coordinates when adding or editing plant records.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to automatically capture GPS coordinates when adding or editing plant records.</string>
 </dict>
 </plist>

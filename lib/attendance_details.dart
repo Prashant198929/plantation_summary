@@ -102,7 +102,7 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
       } else if (record['date'] is DateTime) {
         date = record['date'] as DateTime;
       }
-      String recordPlace = _normalizePlace(record['Place']?.toString());
+      String recordPlace = _normalizePlace((record['Location_Mr'] ?? record['Place'])?.toString());
       String recordZone = (record['zone'] ?? '')
           .toString()
           .trim()
@@ -132,7 +132,7 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
         '[AttendanceDetails] Match breakdown: placeMatches=${filterPlace.isEmpty || recordPlace == filterPlace}, zoneMatches=$zoneMatches',
       );
       print(
-        '[DEBUG] Record raw: date=$date, month=${date?.month}, Place="${record['Place']}", zone="${record['zone']}", matches=$matches',
+        '[DEBUG] Record raw: date=$date, month=${date?.month}, Location_Mr="${record['Location_Mr'] ?? record['Place']}", zone="${record['zone']}", matches=$matches',
       );
       if (matches) {
         final month = date!.month;
@@ -148,137 +148,203 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
     });
   }
 
+  static const _monthNames = [
+    'जानेवारी',
+    'फेब्रुवारी',
+    'मार्च',
+    'एप्रिल',
+    'मे',
+    'जून',
+    'जुलै',
+    'ऑगस्ट',
+    'सप्टेंबर',
+    'ऑक्टोबर',
+    'नोव्हेंबर',
+    'डिसेंबर',
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Attendance Details - ${widget.year}')),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(title: Text('उपस्थिती तपशील - ${widget.year}')),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
                 if (widget.startDate != null || widget.endDate != null)
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  Container(
+                    margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (widget.startDate != null)
-                          Text(
-                            'Start Date: ${widget.startDate!.year.toString().padLeft(4, '0')}-${widget.startDate!.month.toString().padLeft(2, '0')}-${widget.startDate!.day.toString().padLeft(2, '0')}',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                        Icon(Icons.date_range, color: Colors.green[800]),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (widget.startDate != null)
+                                Text(
+                                  'प्रारंभ तारीख: ${widget.startDate!.year.toString().padLeft(4, '0')}-${widget.startDate!.month.toString().padLeft(2, '0')}-${widget.startDate!.day.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green[900],
+                                  ),
+                                ),
+                              if (widget.endDate != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: Text(
+                                    'समाप्ती तारीख: ${widget.endDate!.year.toString().padLeft(4, '0')}-${widget.endDate!.month.toString().padLeft(2, '0')}-${widget.endDate!.day.toString().padLeft(2, '0')}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green[900],
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        if (widget.endDate != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
-                            child: Text(
-                              'End Date: ${widget.endDate!.year.toString().padLeft(4, '0')}-${widget.endDate!.month.toString().padLeft(2, '0')}-${widget.endDate!.day.toString().padLeft(2, '0')}',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
+                        ),
                       ],
                     ),
                   ),
                 Expanded(
                   child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
                     children: [
                       ...List.generate(12, (i) {
                         final month = i + 1;
                         final records = monthMap[month]!;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8.0,
-                            horizontal: 16.0,
+                        final hasRecords = records.isNotEmpty;
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          elevation: hasRecords ? 2 : 0.5,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  [
-                                    'January',
-                                    'February',
-                                    'March',
-                                    'April',
-                                    'May',
-                                    'June',
-                                    'July',
-                                    'August',
-                                    'September',
-                                    'October',
-                                    'November',
-                                    'December',
-                                  ][month - 1],
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8.0,
+                              horizontal: 12.0,
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: hasRecords
+                                      ? const Color(0xFFE8F5E9)
+                                      : Colors.grey[200],
+                                  child: Icon(
+                                    Icons.calendar_month,
+                                    color: hasRecords
+                                        ? Colors.green[800]
+                                        : Colors.grey[500],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Center(
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _monthNames[month - 1],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: hasRecords
+                                          ? Colors.black87
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: hasRecords
+                                        ? const Color(0xFFE8F5E9)
+                                        : Colors.grey[200],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
                                   child: Text(
                                     '${records.length}',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                                      fontSize: 14,
+                                      color: hasRecords
+                                          ? Colors.green[800]
+                                          : Colors.grey[600],
                                     ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: ElevatedButton(
-                                    child: Text('Details'),
-                                    onPressed: () async {
-                                      await FirebaseConfig.logEvent(
-                                        eventType: 'attendance_month_details_clicked',
-                                        description: 'Attendance month details clicked',
-                                        details: {
-                                          'year': widget.year,
-                                          'month': month,
-                                          'place': widget.place,
-                                          'zone': widget.zone,
-                                        },
-                                      );
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => AttendeeDetails(
-                                            year: widget.year,
-                                            month: month,
-                                            place: widget.place,
-                                            zone: widget.zone,
-                                            firestore: widget.firestore,
-                                            startDate:
-                                                (widget.startDate != null &&
-                                                    (widget.startDate !=
-                                                        DateTime(
-                                                          widget.year,
-                                                          1,
-                                                          1,
-                                                        )))
-                                                ? widget.startDate
-                                                : null,
-                                            endDate:
-                                                (widget.endDate != null &&
-                                                    (widget.endDate !=
-                                                        DateTime(
-                                                          widget.year,
-                                                          12,
-                                                          31,
-                                                          23,
-                                                          59,
-                                                          59,
-                                                        )))
-                                                ? widget.endDate
-                                                : null,
-                                          ),
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  style: hasRecords
+                                      ? null
+                                      : ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.grey[300],
+                                          foregroundColor: Colors.grey[700],
+                                          elevation: 0,
                                         ),
-                                      );
-                                    },
-                                  ),
+                                  child: Text('तपशील'),
+                                  onPressed: () async {
+                                    await FirebaseConfig.logEvent(
+                                      eventType: 'attendance_month_details_clicked',
+                                      description: 'Attendance month details clicked',
+                                      details: {
+                                        'year': widget.year,
+                                        'month': month,
+                                        'place': widget.place,
+                                        'zone': widget.zone,
+                                      },
+                                    );
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => AttendeeDetails(
+                                          year: widget.year,
+                                          month: month,
+                                          place: widget.place,
+                                          zone: widget.zone,
+                                          firestore: widget.firestore,
+                                          startDate:
+                                              (widget.startDate != null &&
+                                                  (widget.startDate !=
+                                                      DateTime(
+                                                        widget.year,
+                                                        1,
+                                                        1,
+                                                      )))
+                                              ? widget.startDate
+                                              : null,
+                                          endDate:
+                                              (widget.endDate != null &&
+                                                  (widget.endDate !=
+                                                      DateTime(
+                                                        widget.year,
+                                                        12,
+                                                        31,
+                                                        23,
+                                                        59,
+                                                        59,
+                                                      )))
+                                              ? widget.endDate
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       }),

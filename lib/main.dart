@@ -4,7 +4,6 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:plantation_summary/login_page.dart';
 import 'package:plantation_summary/plantation_list_page.dart';
 import 'package:plantation_summary/broadcast_page.dart';
@@ -15,9 +14,12 @@ import 'report_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'firebase_config.dart';
 import 'firebase_options.dart';
+import 'mobile_encryption_service.dart';
+import 'upload_queue_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,10 +27,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await FirebaseConfig.initialize();
-  await FirebaseAppCheck.instance.activate(
-    androidProvider: AndroidProvider.debug,
-    appleProvider: AppleProvider.debug,
-  );
 
   // Request notification permission before app starts
   await FirebaseMessaging.instance.requestPermission(
@@ -75,7 +73,7 @@ void main() async {
     if (loggedInMobile != null) {
       final query = await FirebaseFirestore.instance
           .collection('users')
-          .where('mobile', isEqualTo: loggedInMobile)
+          .where('mobile', isEqualTo: MobileEncryptionService.encrypt(loggedInMobile!) ?? loggedInMobile)
           .limit(1)
           .get();
       if (query.docs.isNotEmpty) {
@@ -89,22 +87,31 @@ void main() async {
         userId: loggedInMobile,
         details: {'newToken': newToken},
         collectionName: 'Register_Logs',
+        isImportant: true,
       );
     }
   });
 
   // Also update Firestore with the current token at startup
-  final currentToken = await FirebaseMessaging.instance.getToken();
-  if (loggedInMobile != null && currentToken != null) {
-    final query = await FirebaseFirestore.instance
-        .collection('users')
-        .where('mobile', isEqualTo: loggedInMobile)
-        .limit(1)
-        .get();
-    if (query.docs.isNotEmpty) {
-      await query.docs.first.reference.update({'fcmToken': currentToken});
+  try {
+    final currentToken = await FirebaseMessaging.instance.getToken();
+    if (loggedInMobile != null && currentToken != null) {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('mobile', isEqualTo: MobileEncryptionService.encrypt(loggedInMobile!) ?? loggedInMobile)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) {
+        await query.docs.first.reference.update({'fcmToken': currentToken});
+      }
     }
+  } catch (e) {
+    debugPrint('Failed to get FCM token: $e');
+    // Continue app startup even if FCM token retrieval fails
   }
+
+  // Initialize upload queue service
+  await UploadQueueService.initialize();
 
   runApp(const MyApp());
 }
@@ -124,7 +131,7 @@ Future<Map<String, dynamic>?> getCurrentUserDetails(
     }
     final query = await FirebaseFirestore.instance
         .collection('users')
-        .where('mobile', isEqualTo: loggedInMobile)
+        .where('mobile', isEqualTo: MobileEncryptionService.encrypt(loggedInMobile!) ?? loggedInMobile)
         .limit(1)
         .get();
     if (query.docs.isEmpty) {
@@ -134,12 +141,24 @@ Future<Map<String, dynamic>?> getCurrentUserDetails(
       return null;
     }
     final data = query.docs.first.data();
+    final storedMobile = data['mobile']?.toString();
     return {
       'uid': query.docs.first.id,
       'name': data['name'],
+      'name_mr': data['name_mr'] ?? '',
       'role': data['role'],
-      'mobile': data['mobile'],
+      'mobile': storedMobile == null ? '' : (MobileEncryptionService.decrypt(storedMobile) ?? storedMobile),
       'zone': data['zone'],
+      'zone_mr': data['zone_mr'] ?? '',
+      'baithak': data['baithakPlace'] ?? data['baithak'] ?? '',
+      'baithak_mr': data['baithak_mr'] ?? '',
+      'baithak_day': data['baithak_day'] ?? '',
+      'baithak_day_mr': data['baithak_day_mr'] ?? '',
+      'hall': data['hall'] ?? '',
+      'hall_mr': data['hall_mr'] ?? '',
+      'gender': data['gender'] ?? '',
+      'dob': data['dob'] ?? '',
+      'isActive': data['isActive'] ?? true,
     };
   } catch (e) {
     ScaffoldMessenger.of(
@@ -149,69 +168,126 @@ Future<Map<String, dynamic>?> getCurrentUserDetails(
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Process queue when app starts
+    UploadQueueService.processQueue();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Process queue when app resumes from background
+    if (state == AppLifecycleState.resumed) {
+      UploadQueueService.processQueue();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return
-
-
-      MaterialApp(
+    return MaterialApp(
       home: const LoginPage(),
       title: 'Plantation Summary',
       theme: ThemeData(
-        colorScheme: ColorScheme(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2E7D32),
           brightness: Brightness.light,
-          primary: Color(0xFF388E3C), // Deep green
-          onPrimary: Colors.white,
-          secondary: Color(0xFFFFB300), // Vivid amber
-          onSecondary: Colors.black,
-          error: Color(0xFFD32F2F), // Strong red
-          onError: Colors.white,
-          background: Color(0xFFF1F8E9), // Light green background
-          onBackground: Colors.black,
-          surface: Color(0xFFFFFFFF),
-          onSurface: Colors.black,
         ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Color(0xFF388E3C),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF2E7D32),
           foregroundColor: Colors.white,
-          iconTheme: IconThemeData(color: Color(0xFFFFB300)),
+          elevation: 0,
+          scrolledUnderElevation: 2,
+          centerTitle: false,
           titleTextStyle: TextStyle(
-            color: Color(0xFFFFB300),
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            letterSpacing: 0.15,
           ),
+          iconTheme: IconThemeData(color: Colors.white),
+          actionsIconTheme: IconThemeData(color: Colors.white),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF388E3C),
+            backgroundColor: const Color(0xFF2E7D32),
             foregroundColor: Colors.white,
-            textStyle: TextStyle(fontWeight: FontWeight.bold),
+            minimumSize: const Size(0, 46),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
-            elevation: 3,
-            shadowColor: Color(0xFFB2DFDB),
+            elevation: 0,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF2E7D32),
+            side: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+            minimumSize: const Size(0, 46),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: const Color(0xFF2E7D32),
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(color: Color(0xFF388E3C)),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          labelStyle: TextStyle(color: Color(0xFF388E3C)),
-          fillColor: Color(0xFFE8F5E9),
           filled: true,
+          fillColor: const Color(0xFFF1F8E9),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFB0BEC5)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFB0BEC5)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+          ),
+          labelStyle: const TextStyle(color: Color(0xFF558B2F)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
-        scaffoldBackgroundColor: Color(0xFFF1F8E9),
-        cardColor: Color(0xFFE8F5E9),
-        // Removed tabBarTheme due to type incompatibility with Flutter version
-        snackBarTheme: SnackBarThemeData(
-          backgroundColor: Color(0xFF388E3C),
+        cardTheme: CardThemeData(
+          elevation: 1,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF1F8E9),
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Color(0xFF2E7D32),
           contentTextStyle: TextStyle(color: Colors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
         ),
       ),
     );
@@ -226,61 +302,53 @@ class PlantationForm extends StatefulWidget {
 }
 
 class _PlantationFormState extends State<PlantationForm> {
-  final TextEditingController _zoneController = TextEditingController();
-  List<String> _zoneSuggestions = [];
-  String? _selectedZone;
   late final Future<Map<String, dynamic>?> _userDetailsFuture;
+  StreamSubscription<QuerySnapshot>? _accountWatcher;
 
   @override
   void initState() {
     super.initState();
     _userDetailsFuture = getCurrentUserDetails(context);
+    _watchAccount();
   }
 
-  void _showAllZones() async {
-    final query = await FirebaseFirestore.instance.collection('zones').get();
-    setState(() {
-      _zoneSuggestions = query.docs
-          .map((doc) => doc['name'] as String)
-          .toList();
+  // Force sign-out if the admin deletes this user's Firestore document
+  void _watchAccount() {
+    final mobile = loggedInMobile;
+    if (mobile == null) return;
+    _accountWatcher = FirebaseFirestore.instance
+        .collection('users')
+        .where('mobile', isEqualTo: MobileEncryptionService.encrypt(mobile) ?? mobile)
+        .limit(1)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.docs.isEmpty && mounted) {
+        _forceSignOut();
+      }
     });
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => ListView(
-        children: _zoneSuggestions
-            .map(
-              (zone) => ListTile(
-                title: Text(zone),
-                onTap: () {
-                  setState(() {
-                    _zoneController.text = zone;
-                    _selectedZone = zone;
-                    _zoneSuggestions = [];
-                  });
-                  Navigator.pop(context);
-                  _openFilteredPlantList(context);
-                },
-              ),
-            )
-            .toList(),
+  }
+
+  void _forceSignOut() {
+    _accountWatcher?.cancel();
+    loggedInMobile = null;
+    FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (_) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('तुमचे खाते हटवले गेले आहे. कृपया प्रशासकाशी संपर्क करा.'),
+        duration: Duration(seconds: 5),
       ),
     );
   }
 
-  void _openFilteredPlantList(BuildContext context) {
-    final zoneName = _selectedZone?.trim() ?? '';
-    if (zoneName.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => FilteredPlantListPage(zoneName: zoneName),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a zone name to filter.')),
-      );
-    }
+  @override
+  void dispose() {
+    _accountWatcher?.cancel();
+    super.dispose();
   }
 
   @override
@@ -289,35 +357,26 @@ class _PlantationFormState extends State<PlantationForm> {
       length: 8,
       child: Scaffold(
         appBar: AppBar(
-          title: Center(
-            child: Text('श्री', style: const TextStyle(color: Colors.orange)),
-          ),
-          backgroundColor: Colors.white,
-          iconTheme: const IconThemeData(color: Colors.orange),
+          title: const Text('वृक्षमोजणी'),
           bottom: TabBar(
-            tabs: const [
-              Tab(text: 'Home'),
-              Tab(text: 'Plant Management'),
-              Tab(text: 'All Plant Records'),
-              Tab(text: 'Broadcast Message'),
-              Tab(text: 'Reports'),
-              Tab(text: 'Users'),
-              Tab(text: 'Attendance'),
-              Tab(text: 'Contact'),
-            ],
-            labelColor: Colors.orange,
-            indicatorColor: Colors.orange,
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white60,
             isScrollable: true,
+            tabs: const [
+              Tab(icon: Icon(Icons.home_outlined), text: 'मुख्यपृष्ठ'),
+              Tab(icon: Icon(Icons.park_outlined), text: 'व्यवस्थापन'),
+              Tab(icon: Icon(Icons.list_alt_outlined), text: 'सर्व नोंदी'),
+              Tab(icon: Icon(Icons.campaign_outlined), text: 'प्रसारण'),
+              Tab(icon: Icon(Icons.bar_chart_outlined), text: 'अहवाल'),
+              Tab(icon: Icon(Icons.people_outline), text: 'वापरकर्ते'),
+              Tab(icon: Icon(Icons.fact_check_outlined), text: 'उपस्थिती'),
+              Tab(icon: Icon(Icons.info_outline), text: 'संपर्क'),
+            ],
             onTap: (index) async {
               const tabs = [
-                'Home',
-                'Plant Management',
-                'All Plant Records',
-                'Broadcast Message',
-                'Reports',
-                'Users',
-                'Attendance',
-                'Contact',
+                'मुख्यपृष्ठ', 'वनस्पती व्यवस्थापन', 'सर्व वनस्पती नोंदी',
+                'प्रसारण संदेश', 'अहवाल', 'वापरकर्ते', 'उपस्थिती', 'संपर्क',
               ];
               await FirebaseConfig.logEvent(
                 eventType: 'tab_clicked',
@@ -330,282 +389,452 @@ class _PlantationFormState extends State<PlantationForm> {
         ),
         body: FutureBuilder<Map<String, dynamic>?>(
           future: _userDetailsFuture,
-          builder: (context, snapshot) {
+          builder: (context, userSnap) {
+            final role = userSnap.connectionState == ConnectionState.done &&
+                    userSnap.hasData &&
+                    userSnap.data != null
+                ? userSnap.data!['role']?.toString().toLowerCase() ?? ''
+                : '';
             final isSuperAdmin =
-                snapshot.connectionState == ConnectionState.done &&
-                snapshot.hasData &&
-                snapshot.data != null &&
-                (snapshot.data!['role']?.toString().toLowerCase() ==
-                        'super_admin' ||
-                    snapshot.data!['role']?.toString().toLowerCase() ==
-                        'superadmin');
+                role == 'super_admin' || role == 'superadmin';
+            // admin gets everything except User Management
+            final isElevated = isSuperAdmin || role == 'admin';
+
             return TabBarView(
               children: [
-                // Home Tab
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Builder(
-                    builder: (context) {
-                      Widget zoneImage = const SizedBox();
-                      if (snapshot.connectionState == ConnectionState.done &&
-                          snapshot.hasData &&
-                          snapshot.data != null &&
-                          snapshot.data!['zone'] != null) {
-                        final zoneRaw = snapshot.data!['zone']
-                            .toString()
-                            .toLowerCase();
-                        final zoneNumber = zoneRaw.replaceAll(
-                          RegExp(r'[^0-9]'),
-                          '',
-                        );
-                        final svgPath = 'assets/zone_images/$zoneNumber.svg';
-                        zoneImage = SvgPicture.asset(
-                          svgPath,
-                          height: 480,
-                          width: double.infinity,
-                          fit: BoxFit.contain,
-                        );
-                      }
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
-                              ),
-                              child: IntrinsicHeight(
-                                child: Column(
-                                  children: [
-                                    FutureBuilder(
-                                      future: Future.wait([
-                                        FirebaseFirestore.instance.collection('plantation_records').get(),
-                                        FirebaseFirestore.instance.collection('zones').get(),
-                                      ]),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState != ConnectionState.done) {
-                                          return const CircularProgressIndicator();
-                                        }
-                                        if (!snapshot.hasData) {
-                                          return const SizedBox();
-                                        }
-                                        final plantDocs = (snapshot.data as List)[0].docs;
-                                        final zoneDocs = (snapshot.data as List)[1].docs;
-                                        final totalPlants = plantDocs.length;
-                                        final totalZones = zoneDocs.length;
-                                        final plantNames = plantDocs
-                                            .map((doc) {
-                                              final data = doc.data()
-                                                  as Map<String, dynamic>;
-                                              final name = data['name'];
-                                              return name
-                                                  ?.toString()
-                                                  .trim()
-                                                  .toLowerCase();
-                                            })
-                                            .where(
-                                              (name) =>
-                                                  name != null &&
-                                                  name.isNotEmpty,
-                                            )
-                                            .toSet()
-                                            .toList();
-                                        return Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                children: [
-                                                  const Text('Total Plants', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  Text('$totalPlants', style: const TextStyle(fontSize: 20)),
-                                                ],
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Column(
-                                                children: [
-                                                  const Text('Zone Count', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  Text('$totalZones', style: const TextStyle(fontSize: 20)),
-                                                ],
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Column(
-                                                children: [
-                                                  const Text('Types of Plant', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                  Text('${plantNames.length}', style: const TextStyle(fontSize: 20)),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    ),
-                                    const SizedBox(height: 24),
-                                    if (snapshot.connectionState ==
-                                            ConnectionState.done &&
-                                        snapshot.hasData &&
-                                        snapshot.data != null &&
-                                        snapshot.data!['zone'] != null)
-                                      Text(
-                                        snapshot.data!['zone'].toString(),
-                                        style: const TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.orange,
-                                        ),
-                                      ),
-                                    zoneImage,
-                                    const SizedBox(height: 32),
-                                    Spacer(),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        await FirebaseConfig.logEvent(
-                                          eventType: 'sign_out_clicked',
-                                          description: 'Sign out clicked',
-                                          userId: loggedInMobile,
-                                        );
-                                        Navigator.pushReplacement(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const LoginPage(),
-                                          ),
-                                        );
-                                      },
-                                      child: const Text('Sign Out'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-                // Plant Management Tab
+                // ── Home Tab ──────────────────────────────────────────
+                _HomeTab(userSnap: userSnap),
+
+                // ── Plant Management Tab ───────────────────────────────
                 ZoneManagementPage(),
-                // All Plant Records Tab
+
+                // ── All Records Tab ────────────────────────────────────
                 const PlantationListPage(),
-                // Broadcast Message Tab
-                (isSuperAdmin)
+
+                // ── Broadcast Tab ──────────────────────────────────────
+                isElevated
                     ? const BroadcastPage()
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Only super admin can access Broadcast.',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                // Reports Tab
-                (isSuperAdmin)
+                    : _LockedTab(label: 'प्रसारण संदेश', icon: Icons.campaign_outlined),
+
+                // ── Reports Tab ────────────────────────────────────────
+                isElevated
                     ? const ReportPage()
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Only super admin can access Reports.',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                // Users Tab
-                (isSuperAdmin)
+                    : _LockedTab(label: 'अहवाल', icon: Icons.bar_chart_outlined),
+
+                // ── Users Tab — super_admin only ───────────────────────
+                isSuperAdmin
                     ? const UserRoleManagementPage()
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Only super admin can access Users.',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                // Attendance Tab
-                (isSuperAdmin)
+                    : _LockedTab(label: 'वापरकर्ते', icon: Icons.people_outline),
+
+                // ── Attendance Tab ─────────────────────────────────────
+                isElevated
                     ? AttendancePage(userFirestore: FirebaseFirestore.instance)
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Only super admin can access Attendance.',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                // Contact Tab
-                Padding(
-                  padding: const EdgeInsets.only(top: 24.0, left: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () async {
-                          await FirebaseConfig.logEvent(
-                            eventType: 'about_clicked',
-                            description: 'About clicked',
-                            userId: loggedInMobile,
-                          );
-                          showAboutDialog(
-                            context: context,
-                            applicationName: 'Plantation Summary',
-                            applicationVersion: '1.0.0',
-                            children: [
-                              Text('This app helps manage plantation records.'),
-                            ],
-                          );
-                        },
-                        child: const Text('About'),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () async {
-                          await FirebaseConfig.logEvent(
-                            eventType: 'contact_clicked',
-                            description: 'Contact Us clicked',
-                            userId: loggedInMobile,
-                          );
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Contact Us'),
-                              content: const Text(
-                                'Email: support@plantation.com\nPhone: +91-9004223393',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Close'),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        child: const Text('Contact Us'),
-                      ),
-                    ],
-                  ),
-                ),
+                    : _LockedTab(label: 'उपस्थिती', icon: Icons.fact_check_outlined),
+
+                // ── Contact Tab ────────────────────────────────────────
+                _ContactTab(),
               ],
             );
           },
         ),
       ),
+    );
+  }
+}
+
+String _roleLabel(String role) {
+  const map = {
+    'super_admin': 'सुपर प्रशासक',
+    'superadmin': 'सुपर प्रशासक',
+    'admin': 'प्रशासक',
+    'zonal_admin': 'झोनल प्रशासक',
+    'user': 'वापरकर्ता',
+  };
+  return map[role.toLowerCase()] ?? role;
+}
+
+// ── Home Tab ──────────────────────────────────────────────────────────────────
+
+class _HomeTab extends StatelessWidget {
+  final AsyncSnapshot<Map<String, dynamic>?> userSnap;
+  const _HomeTab({required this.userSnap});
+
+  @override
+  Widget build(BuildContext context) {
+    final userData = userSnap.connectionState == ConnectionState.done &&
+            userSnap.hasData &&
+            userSnap.data != null
+        ? userSnap.data!
+        : null;
+
+    final userName = userData?['name']?.toString() ?? '';
+    final userRole = userData?['role']?.toString() ?? '';
+    final userZone = userData?['zone']?.toString() ?? '';
+    final isSuperAdmin = userRole.toLowerCase() == 'super_admin' ||
+        userRole.toLowerCase() == 'superadmin';
+
+    final zoneNumber = userZone.replaceAll(RegExp(r'[^0-9]'), '');
+    final svgPath = 'assets/zone_images/$zoneNumber.svg';
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Shree heading ─────────────────────────────────────────
+          const Text(
+            '॥ श्री ॥',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Colors.orange,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // ── User greeting card ────────────────────────────────────
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: const Color(0xFF2E7D32),
+                    child: Icon(
+                      isSuperAdmin ? Icons.admin_panel_settings_outlined : Icons.person_outline,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          userName.isNotEmpty ? 'नमस्कार, $userName' : 'नमस्कार!',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _roleLabel(userRole),
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await FirebaseConfig.logEvent(
+                        eventType: 'sign_out_clicked',
+                        description: 'Sign out clicked',
+                        userId: loggedInMobile,
+                      );
+                      loggedInMobile = null;
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
+                    },
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: const Text('बाहेर'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      minimumSize: Size.zero,
+                      textStyle: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Stats section ─────────────────────────────────────────
+          FutureBuilder(
+            future: Future.wait([
+              FirebaseFirestore.instance.collection('plantation_records').get(),
+              FirebaseFirestore.instance.collection('zones').get(),
+            ]),
+            builder: (context, statsSnap) {
+              if (statsSnap.connectionState != ConnectionState.done) {
+                return const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+              if (!statsSnap.hasData) return const SizedBox();
+              final plantDocs = (statsSnap.data as List)[0].docs;
+              final zoneDocs = (statsSnap.data as List)[1].docs;
+              final totalPlants = plantDocs.length;
+              final totalZones = zoneDocs.length;
+              final uniqueSpecies = plantDocs
+                  .map((d) => (d.data() as Map)['plantName']?.toString().trim().toLowerCase())
+                  .where((n) => n != null && n.isNotEmpty)
+                  .toSet()
+                  .length;
+
+              return Row(
+                children: [
+                  _StatCard(icon: Icons.park_outlined, label: 'एकूण रोपे', value: '$totalPlants', color: const Color(0xFF2E7D32)),
+                  _StatCard(icon: Icons.map_outlined, label: 'झोन', value: '$totalZones', color: const Color(0xFF1565C0)),
+                  _StatCard(icon: Icons.category_outlined, label: 'प्रजाती', value: '$uniqueSpecies', color: const Color(0xFF6A1B9A)),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+
+          // ── Zone map section ─────────────────────────────────────
+          if (zoneNumber.isNotEmpty) ...[
+            Card(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12, bottom: 4),
+                    child: Text(
+                      'झोन $zoneNumber',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2E7D32),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: SvgPicture.asset(
+                      svgPath,
+                      height: MediaQuery.of(context).size.height * 0.55,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Locked Tab ────────────────────────────────────────────────────────────────
+
+class _LockedTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _LockedTab({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.lock_outline, size: 40, color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'फक्त सुपर प्रशासकाला प्रवेश आहे.',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Contact Tab ───────────────────────────────────────────────────────────────
+
+class _ContactTab extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const SizedBox(height: 8),
+        Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              await FirebaseConfig.logEvent(
+                eventType: 'about_clicked',
+                description: 'About clicked',
+                userId: loggedInMobile,
+              );
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('आमच्याबद्दल'),
+                  content: const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('वृक्षमोजणी', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                      SizedBox(height: 4),
+                      Text('आवृत्ती: १.०.०', style: TextStyle(color: Color(0xFF757575))),
+                      SizedBox(height: 12),
+                      Text('हे अॅप वृक्षारोपण नोंदी व्यवस्थापित करण्यास मदत करते.'),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        showLicensePage(
+                          context: context,
+                          applicationName: 'वृक्षमोजणी',
+                          applicationVersion: '१.०.०',
+                        );
+                      },
+                      child: const Text('परवाने पाहा'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('बंद करा'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Color(0xFF2E7D32), size: 28),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('आमच्याबद्दल', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                        SizedBox(height: 2),
+                        Text('अॅप आवृत्ती व माहिती', style: TextStyle(color: Color(0xFF757575), fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Color(0xFF2E7D32)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.contact_support_outlined, color: Color(0xFF2E7D32), size: 28),
+                    SizedBox(width: 12),
+                    Text('संपर्क माहिती', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                  ],
+                ),
+                const Divider(height: 20),
+                _ContactRow(icon: Icons.email_outlined, label: 'ईमेल', value: 'support@plantation.com'),
+                const SizedBox(height: 10),
+                _ContactRow(icon: Icons.phone_outlined, label: 'फोन', value: '+91-9004223393'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContactRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _ContactRow({required this.icon, required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.grey[600], size: 20),
+        const SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -641,28 +870,31 @@ class FilteredPlantListPage extends StatelessWidget {
               final plantData = plant.data() as Map<String, dynamic>;
               return ListTile(
                 tileColor:
-                    plantData['error'] != null && plantData['error'] != 'NA'
-                    ? Colors.red[100]
-                    : null,
+                    plantData['healthStatus'] != null &&
+                            plantData['healthStatus'] != 'NA'
+                        ? Colors.red[100]
+                        : null,
                 title: Row(
                   children: [
-                    Expanded(child: Text(plantData['name'] ?? '')),
+                    Expanded(child: Text(plantData['plantName'] ?? '')),
                     ElevatedButton(
                       onPressed: () {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: Text(plantData['name'] ?? 'Plant Details'),
+                            title: Text(plantData['plantName'] ?? 'Plant Details'),
                             content: Column(
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (plantData['description'] != null)
+                                if (plantData['plantNumber'] != null)
                                   Text(
-                                    'Plant Number: ${plantData['description']}',
+                                    'Plant Number: ${plantData['plantNumber']}',
                                   ),
-                                if (plantData['error'] != null)
-                                  Text('Issue: ${plantData['error']}'),
+                                if (plantData['healthStatus'] != null)
+                                  Text(
+                                    'Health Status: ${plantData['healthStatus']}',
+                                  ),
                                 if (plantData['height'] != null)
                                   Text('Height: ${plantData['height']}'),
                                 if (plantData['biomass'] != null)

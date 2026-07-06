@@ -2,8 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'firebase_config.dart';
+import 'upload_queue_service.dart';
+
+String _safeUploadUserId(String plantName, String plantNumber, String zoneName) {
+  final raw = '${plantName}_${plantNumber}_${zoneName}';
+  final safe = raw.replaceAll(RegExp(r'[^\w\d]'), '_');
+  return safe.isEmpty ? 'unknown' : safe;
+}
 
 class EditPlantationPage extends StatefulWidget {
   final String docId;
@@ -20,11 +28,16 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _errorController;
+  late TextEditingController _girthController;
+  late TextEditingController _heightController;
+  late TextEditingController _stumpController;
+  late TextEditingController _longitudeController;
+  late TextEditingController _latitudeController;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.data['name'] ?? '');
+    _nameController = TextEditingController(text: widget.data['plantName'] ?? '');
     Future.microtask(() async {
       await FirebaseConfig.logEvent(
         eventType: 'edit_plantation_opened',
@@ -33,9 +46,20 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
       );
     });
     _descriptionController = TextEditingController(
-      text: widget.data['description'] ?? '',
+      text: widget.data['plantNumber'] ?? '',
     );
-    _errorController = TextEditingController(text: widget.data['error'] ?? '');
+    _errorController = TextEditingController(
+      text: widget.data['healthStatus'] ?? '',
+    );
+    _girthController = TextEditingController(text: widget.data['girth'] ?? '');
+    _heightController = TextEditingController(text: widget.data['height'] ?? '');
+    _stumpController = TextEditingController(text: widget.data['stump'] ?? '');
+    _longitudeController = TextEditingController(
+      text: widget.data['longitude'] ?? '',
+    );
+    _latitudeController = TextEditingController(
+      text: widget.data['latitude'] ?? '',
+    );
   }
 
   Future<void> _updateRecord() async {
@@ -48,19 +72,27 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
         .collection('plantation_records')
         .doc(widget.docId)
         .update({
-          'name': _nameController.text,
-          'description': _descriptionController.text,
-          'error': _errorController.text,
+          'plantName': _nameController.text,
+          'plantNumber': _descriptionController.text,
+          'healthStatus': _errorController.text,
+          'girth': _girthController.text,
+          'height': _heightController.text,
+          'stump': _stumpController.text,
+          'longitude': _longitudeController.text,
+          'latitude': _latitudeController.text,
           'timestamp': DateTime.now().toIso8601String(),
+          'Planted_On':
+              widget.data['Planted_On'] ?? DateTime.now().toIso8601String(),
         });
     await FirebaseConfig.logEvent(
       eventType: 'plantation_updated',
       description: 'Plantation record updated',
+      isImportant: true,
       details: {
         'docId': widget.docId,
-        'name': _nameController.text,
-        'description': _descriptionController.text,
-        'error': _errorController.text,
+        'plantName': _nameController.text,
+        'plantNumber': _descriptionController.text,
+        'healthStatus': _errorController.text,
       },
     );
     ScaffoldMessenger.of(context).showSnackBar(
@@ -83,7 +115,7 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: 'Name',
+                    labelText: 'Plant Name',
                     fillColor: Colors.white,
                     filled: true,
                   ),
@@ -99,9 +131,54 @@ class _EditPlantationPageState extends State<EditPlantationPage> {
                 ),
                 const SizedBox(height: 20),
                 TextField(
+                  controller: _girthController,
+                  decoration: InputDecoration(
+                    labelText: 'Girth',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _heightController,
+                  decoration: InputDecoration(
+                    labelText: 'Height',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _stumpController,
+                  decoration: InputDecoration(
+                    labelText: 'Stump',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _longitudeController,
+                  decoration: InputDecoration(
+                    labelText: 'Longitude',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _latitudeController,
+                  decoration: InputDecoration(
+                    labelText: 'Latitude',
+                    fillColor: Colors.white,
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
                   controller: _errorController,
                   decoration: InputDecoration(
-                    labelText: 'Error',
+                    labelText: 'Health Status',
                     fillColor: Colors.white,
                     filled: true,
                   ),
@@ -148,72 +225,107 @@ class _ImagePickerAndUploadSectionState
   bool _uploading = false;
   String? _uploadedUrl;
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImage(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(source: source);
     if (image != null) {
-      setState(() {
-        _pickedImage = image;
-      });
+      try {
+        final appDocDir = await getApplicationDocumentsDirectory();
+        final stableDir = Directory('${appDocDir.path}/temp_picks');
+        if (!await stableDir.exists()) await stableDir.create(recursive: true);
+        final ext = image.name.contains('.') ? image.name.split('.').last : 'jpg';
+        final stablePath = '${stableDir.path}/pending_image.$ext';
+        final bytes = await image.readAsBytes();
+        await File(stablePath).writeAsBytes(bytes);
+        setState(() { _pickedImage = XFile(stablePath); });
+      } catch (_) {
+        setState(() { _pickedImage = image; });
+      }
     }
   }
 
-  Future<void> _uploadImageToServer() async {
+  Future<void> _uploadImageToStorage() async {
     if (_pickedImage == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No image selected')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('कृपया आधी फोटो निवडा')),
+      );
       return;
     }
-    setState(() {
-      _uploading = true;
-    });
+    setState(() => _uploading = true);
+
+    final docId = widget.docId;
+    final ext = _pickedImage!.name.contains('.') ? _pickedImage!.name.split('.').last : 'jpg';
+
+    // Save a stable local copy first (same pattern as zone_management_page)
+    String localImagePath = _pickedImage!.path;
     try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('http://80.225.203.181:8081/api/images/upload'),
+      final localDir = await getApplicationDocumentsDirectory();
+      final safeDocId = docId.replaceAll(RegExp(r'[^\w\d]'), '_');
+      final localFilePath = '${localDir.path}/$safeDocId.$ext';
+      await File(_pickedImage!.path).copy(localFilePath);
+      localImagePath = localFilePath;
+    } catch (_) {}
+
+    await FirebaseConfig.logEvent(
+      eventType: 'edit_plantation_upload_initiated',
+      description: 'Edit plantation image upload initiated',
+      details: {'docId': docId},
+    );
+
+    try {
+      // One fixed path per plant — overwrites on re-upload, no duplicates
+      final ref = FirebaseStorage.instance.ref('images/$docId.$ext');
+      await ref.putFile(File(localImagePath));
+      final imageUrl = await ref.getDownloadURL();
+
+      setState(() => _uploadedUrl = imageUrl);
+
+      await FirebaseFirestore.instance
+          .collection('plantation_records')
+          .doc(docId)
+          .update({'imageUrl': imageUrl, 'localImagePath': localImagePath});
+
+      await FirebaseConfig.logEvent(
+        eventType: 'edit_plantation_upload_success',
+        description: 'Edit plantation image uploaded to Firebase Storage',
+        details: {'docId': docId, 'imageUrl': imageUrl},
       );
-      request.files.add(
-        await http.MultipartFile.fromPath('file', _pickedImage!.path),
-      );
-      final userId = widget.nameController.text.isEmpty
-          ? 'unknown'
-          : widget.nameController.text;
-      request.fields['userId'] = userId;
-      var response = await request.send();
-      if (response.statusCode == 200) {
-        final filename = _pickedImage!.name;
-        final imageUrl =
-            'http://80.225.203.181:8081/api/images/view?userId=$userId&filename=$filename';
-        setState(() {
-          _uploadedUrl = imageUrl;
-        });
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image uploaded! URL: $imageUrl')),
-        );
-      } else {
-        // Save image path locally for retry/queue
-        await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
-          'localImagePath': _pickedImage!.path,
-          'error': 'Image upload failed. Please try again later.',
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed. Please try again later.')),
+          const SnackBar(content: Text('फोटो यशस्वीरित्या अपलोड झाला')),
         );
       }
     } catch (e) {
-      // Save image path locally for retry/queue
-      await FirebaseFirestore.instance.collection('plantation_records').doc(widget.docId).update({
-        'localImagePath': _pickedImage?.path,
-        'error': 'Image upload failed. Please try again later.',
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Image upload failed. Please try again later.')));
+      // Firebase Storage failed — queue for retry when connection returns
+      final uploadItem = UploadItem(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        imagePath: localImagePath,
+        userId: _safeUploadUserId(widget.nameController.text, docId, ''),
+        docId: docId,
+        createdAt: DateTime.now(),
+      );
+      await UploadQueueService.addToQueue(uploadItem);
+
+      await FirebaseFirestore.instance
+          .collection('plantation_records')
+          .doc(docId)
+          .update({'localImagePath': localImagePath});
+
+      await FirebaseConfig.logEvent(
+        eventType: 'edit_plantation_upload_error',
+        description: 'Edit plantation upload failed — queued for retry',
+        details: {'docId': docId, 'queueId': uploadItem.id, 'error': e.toString()},
+        isError: true,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('फोटो रांगेत जोडला — कनेक्शन आल्यावर अपलोड होईल')),
+        );
+      }
     } finally {
-      setState(() {
-        _uploading = false;
-      });
+      if (mounted) setState(() => _uploading = false);
     }
   }
 
@@ -222,20 +334,35 @@ class _ImagePickerAndUploadSectionState
     print('Building ImagePickerAndUploadSection');
     return Column(
       children: [
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            ElevatedButton(
+            IconButton(
+              tooltip: 'Gallery',
+              icon: const Icon(Icons.photo_library, color: Colors.blue),
               onPressed: () async {
                 await FirebaseConfig.logEvent(
                   eventType: 'edit_plantation_pick_image',
-                  description: 'Edit plantation pick image',
+                  description: 'Edit plantation pick image (gallery)',
                   details: {'docId': widget.docId},
                 );
-                _pickImage();
+                _pickImage(ImageSource.gallery);
               },
-              child: const Text('Pick Image'),
             ),
-            const SizedBox(width: 16),
+            IconButton(
+              tooltip: 'Camera',
+              icon: const Icon(Icons.camera_alt, color: Colors.orange),
+              onPressed: () async {
+                await FirebaseConfig.logEvent(
+                  eventType: 'edit_plantation_pick_image',
+                  description: 'Edit plantation pick image (camera)',
+                  details: {'docId': widget.docId},
+                );
+                _pickImage(ImageSource.camera);
+              },
+            ),
             _pickedImage != null
                 ? SizedBox(
                     width: 80,
@@ -245,7 +372,7 @@ class _ImagePickerAndUploadSectionState
                       fit: BoxFit.cover,
                     ),
                   )
-                : const Text('No image selected'),
+                : const Text('फोटो निवडला नाही'),
           ],
         ),
         const SizedBox(height: 8),
@@ -258,16 +385,26 @@ class _ImagePickerAndUploadSectionState
                     description: 'Edit plantation upload clicked',
                     details: {'docId': widget.docId},
                   );
-                  _uploadImageToServer();
+                  _uploadImageToStorage();
                 },
           child: _uploading
-              ? const Text('Uploading...')
-              : const Text('Upload Image to Server'),
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('फोटो अपलोड करा'),
         ),
         if (_uploadedUrl != null)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
-            child: Text('Uploaded URL: $_uploadedUrl'),
+            child: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.green, size: 16),
+                SizedBox(width: 4),
+                Text('फोटो Firebase Storage मध्ये जतन झाला', style: TextStyle(color: Colors.green)),
+              ],
+            ),
           ),
       ],
     );

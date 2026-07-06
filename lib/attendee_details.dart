@@ -94,7 +94,7 @@ class _AttendeeDetailsState extends State<AttendeeDetails> {
     records = snapshot.docs
         .map((doc) => doc.data() as Map<String, dynamic>)
         .where((record) {
-          String recordPlace = _normalizePlace(record['Place']?.toString());
+          String recordPlace = _normalizePlace((record['Location_Mr'] ?? record['Place'])?.toString());
           String recordZone =
               (record['zone'] ?? '').toString().trim().toLowerCase();
           String recordZoneNormalized =
@@ -121,15 +121,28 @@ class _AttendeeDetailsState extends State<AttendeeDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Attendee Details - ${widget.year}-${widget.month.toString().padLeft(2, '0')}'),
+        title: Text('उपस्थित तपशील - ${widget.year}-${widget.month.toString().padLeft(2, '0')}'),
       ),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
           Expanded(
             child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : records.isEmpty
-                    ? Center(child: Text('No records found for this month.'))
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.event_busy, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 12),
+                            Text(
+                              'या महिन्यासाठी कोणतीही नोंद आढळली नाही.',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
                     : _PaginatedAttendeeList(records: records, onDownload: _downloadAttendeeDetails),
           ),
         ],
@@ -143,34 +156,87 @@ class _AttendeeDetailsState extends State<AttendeeDetails> {
       final sheet = excel['Attendees'];
       if (records.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No attendee records to export.')),
+          SnackBar(content: Text('निर्यात करण्यासाठी कोणतीही नोंद नाही.')),
         );
         return;
       }
-      // Add dateString column for each record
-      final exportRecords = records.map((record) {
-        final data = Map<String, dynamic>.from(record);
-        if (!data.containsKey('dateString')) {
-          final ts = data['date'];
-          if (ts is Timestamp) {
-            data['dateString'] = ts.toDate().toIso8601String();
-          } else if (ts is DateTime) {
-            data['dateString'] = ts.toIso8601String();
-          } else {
-            data['dateString'] = ts?.toString() ?? '';
+      String excelMarathiDay(DateTime dt) {
+        const days = ['सोमवार', 'मंगळवार', 'बुधवार', 'गुरुवार', 'शुक्रवार', 'शनिवार', 'रविवार'];
+        return days[dt.weekday - 1];
+      }
+      String excelEnglishDay(DateTime dt) {
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        return days[dt.weekday - 1];
+      }
+      String excelEnglishMonth(DateTime dt) {
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        return months[dt.month - 1];
+      }
+      DateTime? firstDt;
+      final firstDateVal = records.isNotEmpty ? records.first['date'] : null;
+      if (firstDateVal is Timestamp) firstDt = firstDateVal.toDate();
+      else if (firstDateVal is DateTime) firstDt = firstDateVal;
+      firstDt ??= DateTime.now();
+      final headerPlace = (widget.place?.isNotEmpty == true)
+          ? widget.place!
+          : (records.isNotEmpty ? (records.first['Location_Mr']?.toString() ?? records.first['Place']?.toString() ?? '') : '');
+      // Lookup baithak/hajeri_kramank from main users collection for old records
+      final needsLookupIds = records
+          .where((r) => (r['baithak'] ?? '').toString().trim().isEmpty || (r['hajeri_kramank'] ?? '').toString().trim().isEmpty)
+          .map((r) => r['userId']?.toString().trim() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet()
+          .toList();
+      final userLookup = <String, Map<String, dynamic>>{};
+      if (needsLookupIds.isNotEmpty) {
+        for (int i = 0; i < needsLookupIds.length; i += 30) {
+          final chunk = needsLookupIds.sublist(i, (i + 30).clamp(0, needsLookupIds.length));
+          final snap = await FirebaseFirestore.instance.collection('users').where(FieldPath.documentId, whereIn: chunk).get();
+          for (final doc in snap.docs) {
+            userLookup[doc.id] = doc.data();
           }
         }
-        return data;
-      }).toList();
-      // Ensure 'dateString' is included in header
-      final headerKeys = exportRecords.first.keys.toList();
-      if (!headerKeys.contains('dateString')) {
-        headerKeys.add('dateString');
       }
-      sheet.appendRow(headerKeys.map((k) => TextCellValue(k.toString())).toList());
-      for (final record in exportRecords) {
-        final row = headerKeys.map((k) => TextCellValue(record[k]?.toString() ?? '')).toList();
-        sheet.appendRow(row);
+      String getBaithak(Map<String, dynamic> r) {
+        final v = r['baithak']?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+        final uid = r['userId']?.toString().trim() ?? '';
+        return userLookup[uid]?['baithakPlace']?.toString() ?? '';
+      }
+      String getHajeriKramank(Map<String, dynamic> r) {
+        final v = r['hajeri_kramank']?.toString().trim() ?? '';
+        if (v.isNotEmpty) return v;
+        final uid = r['userId']?.toString().trim() ?? '';
+        return userLookup[uid]?['baithakNo']?.toString() ?? '';
+      }
+      sheet.appendRow([TextCellValue('श्री सेवेचे ठिकाण: $headerPlace')]);
+      sheet.appendRow([TextCellValue('दि. ${excelEnglishDay(firstDt)}, ${excelEnglishMonth(firstDt)} ${firstDt.day}, ${firstDt.year}')]);
+      sheet.appendRow([TextCellValue('')]);
+      sheet.appendRow([
+        TextCellValue('क्रमांक'),
+        TextCellValue('नाव'),
+        TextCellValue('मराठी नाव'),
+        TextCellValue('बैठक'),
+        TextCellValue('वार'),
+        TextCellValue('हजेरी क्रमांक'),
+        TextCellValue('काम'),
+      ]);
+      int serial = 1;
+      for (final record in records) {
+        DateTime? recDt;
+        final dv = record['date'];
+        if (dv is Timestamp) recDt = dv.toDate();
+        else if (dv is DateTime) recDt = dv;
+        sheet.appendRow([
+          TextCellValue('$serial'),
+          TextCellValue(record['name']?.toString() ?? ''),
+          TextCellValue(record['name_mr']?.toString() ?? ''),
+          TextCellValue(getBaithak(record)),
+          TextCellValue(recDt != null ? excelMarathiDay(recDt) : ''),
+          TextCellValue(getHajeriKramank(record)),
+          TextCellValue(record['Topic']?.toString() ?? ''),
+        ]);
+        serial++;
       }
 
       Directory? downloadsDir;
@@ -229,86 +295,177 @@ class _PaginatedAttendeeListState extends State<_PaginatedAttendeeList> {
     final end = ((page + 1) * pageSize).clamp(0, widget.records.length);
     final pageRecords = widget.records.sublist(start, end);
 
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            itemCount: pageRecords.length,
-            itemBuilder: (context, idx) {
-              final record = pageRecords[idx];
-              return ListTile(
-                leading: Icon(
-                  record['status'] == 'Present'
-                      ? Icons.check_circle
-                      : Icons.cancel,
-                  color: record['status'] == 'Present'
-                      ? Colors.green
-                      : Colors.red,
-                ),
-                title: Text(record['name'] ?? ''),
-                subtitle: Text(
-                  'Time: ${record['time'] ?? ''}\nTopic: ${record['Topic'] ?? 'Not specified'}',
-                ),
-                trailing: Text(
-                  record['status'] ?? '',
-                  style: TextStyle(
-                    color: record['status'] == 'Present'
-                        ? Colors.green
-                        : Colors.red,
-                    fontWeight: FontWeight.bold,
+    return Container(
+      color: const Color(0xFFF5F5F5),
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              itemCount: pageRecords.length,
+              itemBuilder: (context, idx) {
+                final record = pageRecords[idx];
+                final isPresent = record['status'] == 'Present';
+                DateTime? recDate;
+                final dv = record['date'];
+                if (dv is Timestamp) recDate = dv.toDate();
+                else if (dv is DateTime) recDate = dv;
+                final formattedDate = recDate != null
+                    ? '${recDate.year.toString().padLeft(4, '0')}-${recDate.month.toString().padLeft(2, '0')}-${recDate.day.toString().padLeft(2, '0')}'
+                    : '';
+                final hajeriKramank = (record['hajeri_kramank'] ?? '').toString();
+                final topic = (record['Topic'] ?? 'निर्दिष्ट नाही').toString();
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: isPresent
+                              ? const Color(0xFFE8F5E9)
+                              : const Color(0xFFFFEBEE),
+                          child: Icon(
+                            isPresent ? Icons.check_circle : Icons.cancel,
+                            color: isPresent ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                record['name'] ?? '',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              _DetailRow(icon: Icons.calendar_today, text: formattedDate),
+                              const SizedBox(height: 3),
+                              _DetailRow(icon: Icons.badge, text: 'हजेरी क्रमांक: $hajeriKramank'),
+                              const SizedBox(height: 3),
+                              _DetailRow(icon: Icons.topic, text: topic),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isPresent
+                                ? const Color(0xFFE8F5E9)
+                                : const Color(0xFFFFEBEE),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            isPresent ? 'उपस्थित' : (record['status'] ?? ''),
+                            style: TextStyle(
+                              color: isPresent ? Colors.green[800] : Colors.red[800],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('पृष्ठ ${page + 1} / $totalPages'),
+              IconButton(
+                icon: Icon(Icons.chevron_left),
+                onPressed: page > 0
+                    ? () async {
+                        await FirebaseConfig.logEvent(
+                          eventType: 'attendee_page_prev',
+                          description: 'Attendee page previous',
+                          details: {'page': page},
+                        );
+                        setState(() => page--);
+                      }
+                    : null,
+              ),
+              IconButton(
+                icon: Icon(Icons.chevron_right),
+                onPressed: page < totalPages - 1
+                    ? () async {
+                        await FirebaseConfig.logEvent(
+                          eventType: 'attendee_page_next',
+                          description: 'Attendee page next',
+                          details: {'page': page},
+                        );
+                        setState(() => page++);
+                      }
+                    : null,
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              );
-            },
+                icon: Icon(Icons.download),
+                label: Text('यादी डाउनलोड करा'),
+                onPressed: widget.records.isEmpty
+                    ? null
+                    : () async {
+                        await FirebaseConfig.logEvent(
+                          eventType: 'attendee_download_clicked',
+                          description: 'Attendee download clicked',
+                          details: {'count': widget.records.length},
+                        );
+                        await widget.onDownload(context);
+                      },
+              ),
+            ),
           ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Page ${page + 1} of $totalPages'),
-            IconButton(
-              icon: Icon(Icons.chevron_left),
-              onPressed: page > 0
-                  ? () async {
-                      await FirebaseConfig.logEvent(
-                        eventType: 'attendee_page_prev',
-                        description: 'Attendee page previous',
-                        details: {'page': page},
-                      );
-                      setState(() => page--);
-                    }
-                  : null,
-            ),
-            IconButton(
-              icon: Icon(Icons.chevron_right),
-              onPressed: page < totalPages - 1
-                  ? () async {
-                      await FirebaseConfig.logEvent(
-                        eventType: 'attendee_page_next',
-                        description: 'Attendee page next',
-                        details: {'page': page},
-                      );
-                      setState(() => page++);
-                    }
-                  : null,
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton.icon(
-            icon: Icon(Icons.download),
-            label: Text('Download List'),
-            onPressed: widget.records.isEmpty
-                ? null
-                : () async {
-                    await FirebaseConfig.logEvent(
-                      eventType: 'attendee_download_clicked',
-                      description: 'Attendee download clicked',
-                      details: {'count': widget.records.length},
-                    );
-                    await widget.onDownload(context);
-                  },
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _DetailRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey[600]),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
           ),
         ),
       ],

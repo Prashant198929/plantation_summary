@@ -1,6 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Location permissions for GPS functionality -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Camera permission for taking plant photos -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Gallery access: Android 13+ uses READ_MEDIA_IMAGES, older versions use READ_EXTERNAL_STORAGE -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    
     <application
-        android:label="plantation_summary"
+        android:label="वृक्षारोपण"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

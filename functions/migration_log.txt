@@ -1,0 +1,707 @@
+[2026-07-03T17:15:38.258Z] === Migration run started ===
+[2026-07-03T17:15:38.260Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-03T17:16:29.825Z] Loaded 110798 total rows from source.
+[2026-07-03T17:16:29.827Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-03T17:16:31.058Z]   1456 existing user doc(s) indexed by uid.
+[2026-07-03T17:16:31.060Z] Resuming from checkpoint: offset 20000 (1434 users, 19890 attendance written so far, 110 skipped).
+[2026-07-04T06:09:54.924Z] === Migration run started ===
+[2026-07-04T06:09:54.927Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-04T06:10:55.936Z] Loaded 110798 total rows from source.
+[2026-07-04T06:10:55.938Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-04T06:10:57.606Z]   1456 existing user doc(s) indexed by uid.
+[2026-07-04T06:10:57.608Z] Resuming from checkpoint: offset 20000 (1434 users, 19890 attendance written so far, 110 skipped).
+[2026-07-04T06:11:42.634Z] ERROR:   chunk 201 attempt 1/6 failed: Timed out after 45000ms: chunk 201 attempt 1
+[2026-07-04T06:11:42.662Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T06:11:58.680Z] ERROR:   chunk 201 attempt 2/6 failed: 8 RESOURCE_EXHAUSTED: Quota exceeded.
+[2026-07-04T06:11:58.681Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T06:12:27.540Z] ERROR:   chunk 201 attempt 3/6 failed: 8 RESOURCE_EXHAUSTED: Quota exceeded.
+[2026-07-04T06:12:27.542Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T06:13:17.438Z] ERROR:   chunk 201 attempt 4/6 failed: 8 RESOURCE_EXHAUSTED: Quota exceeded.
+[2026-07-04T06:13:17.440Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T06:14:27.653Z] ERROR:   chunk 201 attempt 5/6 failed: 8 RESOURCE_EXHAUSTED: Quota exceeded.
+[2026-07-04T06:14:27.655Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T06:16:07.583Z] ERROR:   chunk 201 attempt 6/6 failed: 8 RESOURCE_EXHAUSTED: Quota exceeded.
+[2026-07-04T06:16:07.585Z] ERROR: Fatal: 8 RESOURCE_EXHAUSTED: Quota exceeded.
+[2026-07-04T06:16:07.586Z] === Migration run ended (fatal error) ===
+
+[2026-07-04T07:05:31.419Z] === Migration run started ===
+[2026-07-04T07:05:31.422Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-04T07:06:23.173Z] Loaded 110798 total rows from source.
+[2026-07-04T07:06:23.175Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-04T07:06:24.129Z]   1456 existing user doc(s) indexed by uid.
+[2026-07-04T07:06:24.132Z] Resuming from checkpoint: offset 20000 (1434 users, 19890 attendance written so far, 110 skipped).
+[2026-07-04T07:06:25.186Z] [201/1108] rows 20001-20100: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:26.003Z] [202/1108] rows 20101-20200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:27.083Z] [203/1108] rows 20201-20300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:27.846Z] [204/1108] rows 20301-20400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:28.739Z] [205/1108] rows 20401-20500: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:29.491Z] [206/1108] rows 20501-20600: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:30.312Z] [207/1108] rows 20601-20700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:31.011Z] [208/1108] rows 20701-20800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:31.791Z] [209/1108] rows 20801-20900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:32.641Z] [210/1108] rows 20901-21000: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:33.395Z] [211/1108] rows 21001-21100: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:34.187Z] [212/1108] rows 21101-21200: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:34.892Z] [213/1108] rows 21201-21300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:35.721Z] [214/1108] rows 21301-21400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:36.402Z] [215/1108] rows 21401-21500: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:37.165Z] [216/1108] rows 21501-21600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:37.867Z] [217/1108] rows 21601-21700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:38.538Z] [218/1108] rows 21701-21800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:39.232Z] [219/1108] rows 21801-21900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:39.899Z] [220/1108] rows 21901-22000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:40.653Z] [221/1108] rows 22001-22100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:41.406Z] [222/1108] rows 22101-22200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:42.186Z] [223/1108] rows 22201-22300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:42.884Z] [224/1108] rows 22301-22400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:43.697Z] [225/1108] rows 22401-22500: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:44.521Z] [226/1108] rows 22501-22600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:45.329Z] [227/1108] rows 22601-22700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:46.086Z] [228/1108] rows 22701-22800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:46.755Z] [229/1108] rows 22801-22900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:47.491Z] [230/1108] rows 22901-23000: 89 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:48.198Z] [231/1108] rows 23001-23100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:48.841Z] [232/1108] rows 23101-23200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:49.541Z] [233/1108] rows 23201-23300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:50.267Z] [234/1108] rows 23301-23400: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:50.923Z] [235/1108] rows 23401-23500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:51.679Z] [236/1108] rows 23501-23600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:52.561Z] [237/1108] rows 23601-23700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:53.272Z] [238/1108] rows 23701-23800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:54.139Z] [239/1108] rows 23801-23900: 94 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:54.863Z] [240/1108] rows 23901-24000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:55.558Z] [241/1108] rows 24001-24100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:56.394Z] [242/1108] rows 24101-24200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:57.121Z] [243/1108] rows 24201-24300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:57.811Z] [244/1108] rows 24301-24400: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:58.548Z] [245/1108] rows 24401-24500: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:59.256Z] [246/1108] rows 24501-24600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:06:59.895Z] [247/1108] rows 24601-24700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:00.581Z] [248/1108] rows 24701-24800: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:01.249Z] [249/1108] rows 24801-24900: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:01.923Z] [250/1108] rows 24901-25000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:02.621Z] [251/1108] rows 25001-25100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:03.285Z] [252/1108] rows 25101-25200: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:04.107Z] [253/1108] rows 25201-25300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:04.880Z] [254/1108] rows 25301-25400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:05.617Z] [255/1108] rows 25401-25500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:06.329Z] [256/1108] rows 25501-25600: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:06.988Z] [257/1108] rows 25601-25700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:07.722Z] [258/1108] rows 25701-25800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:08.472Z] [259/1108] rows 25801-25900: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:09.311Z] [260/1108] rows 25901-26000: 97 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:10.173Z] [261/1108] rows 26001-26100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:11.003Z] [262/1108] rows 26101-26200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:11.715Z] [263/1108] rows 26201-26300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:12.533Z] [264/1108] rows 26301-26400: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:13.343Z] [265/1108] rows 26401-26500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:14.306Z] [266/1108] rows 26501-26600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:15.027Z] [267/1108] rows 26601-26700: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:15.725Z] [268/1108] rows 26701-26800: 94 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:16.482Z] [269/1108] rows 26801-26900: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:17.306Z] [270/1108] rows 26901-27000: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:18.003Z] [271/1108] rows 27001-27100: 98 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:18.697Z] [272/1108] rows 27101-27200: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:19.438Z] [273/1108] rows 27201-27300: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:20.250Z] [274/1108] rows 27301-27400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:21.036Z] [275/1108] rows 27401-27500: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:21.737Z] [276/1108] rows 27501-27600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:22.508Z] [277/1108] rows 27601-27700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:23.225Z] [278/1108] rows 27701-27800: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:24.035Z] [279/1108] rows 27801-27900: 96 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:24.759Z] [280/1108] rows 27901-28000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:25.497Z] [281/1108] rows 28001-28100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:26.163Z] [282/1108] rows 28101-28200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:27.008Z] [283/1108] rows 28201-28300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:27.764Z] [284/1108] rows 28301-28400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:28.440Z] [285/1108] rows 28401-28500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:29.174Z] [286/1108] rows 28501-28600: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:29.871Z] [287/1108] rows 28601-28700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:30.654Z] [288/1108] rows 28701-28800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:31.287Z] [289/1108] rows 28801-28900: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:31.925Z] [290/1108] rows 28901-29000: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:32.592Z] [291/1108] rows 29001-29100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:33.220Z] [292/1108] rows 29101-29200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:33.931Z] [293/1108] rows 29201-29300: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:34.547Z] [294/1108] rows 29301-29400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:35.279Z] [295/1108] rows 29401-29500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:36.009Z] [296/1108] rows 29501-29600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:36.648Z] [297/1108] rows 29601-29700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:37.362Z] [298/1108] rows 29701-29800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:38.035Z] [299/1108] rows 29801-29900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:38.786Z] [300/1108] rows 29901-30000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:39.499Z] [301/1108] rows 30001-30100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:40.228Z] [302/1108] rows 30101-30200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:40.997Z] [303/1108] rows 30201-30300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:41.655Z] [304/1108] rows 30301-30400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:42.400Z] [305/1108] rows 30401-30500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:43.172Z] [306/1108] rows 30501-30600: 93 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:43.904Z] [307/1108] rows 30601-30700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:44.755Z] [308/1108] rows 30701-30800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:45.565Z] [309/1108] rows 30801-30900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:46.379Z] [310/1108] rows 30901-31000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:47.096Z] [311/1108] rows 31001-31100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:47.791Z] [312/1108] rows 31101-31200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:48.515Z] [313/1108] rows 31201-31300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:49.220Z] [314/1108] rows 31301-31400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:50.056Z] [315/1108] rows 31401-31500: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:50.765Z] [316/1108] rows 31501-31600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:51.437Z] [317/1108] rows 31601-31700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:52.199Z] [318/1108] rows 31701-31800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:52.817Z] [319/1108] rows 31801-31900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:53.531Z] [320/1108] rows 31901-32000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:54.259Z] [321/1108] rows 32001-32100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:54.971Z] [322/1108] rows 32101-32200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:55.675Z] [323/1108] rows 32201-32300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:56.505Z] [324/1108] rows 32301-32400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:57.179Z] [325/1108] rows 32401-32500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:57.947Z] [326/1108] rows 32501-32600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:58.758Z] [327/1108] rows 32601-32700: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:07:59.576Z] [328/1108] rows 32701-32800: 94 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:00.183Z] [329/1108] rows 32801-32900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:00.897Z] [330/1108] rows 32901-33000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:01.627Z] [331/1108] rows 33001-33100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:02.360Z] [332/1108] rows 33101-33200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:03.056Z] [333/1108] rows 33201-33300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:03.774Z] [334/1108] rows 33301-33400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:04.594Z] [335/1108] rows 33401-33500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:05.288Z] [336/1108] rows 33501-33600: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:06.028Z] [337/1108] rows 33601-33700: 92 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:06.865Z] [338/1108] rows 33701-33800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:07.617Z] [339/1108] rows 33801-33900: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:08.349Z] [340/1108] rows 33901-34000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:09.003Z] [341/1108] rows 34001-34100: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:09.917Z] [342/1108] rows 34101-34200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:10.609Z] [343/1108] rows 34201-34300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:11.354Z] [344/1108] rows 34301-34400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:12.068Z] [345/1108] rows 34401-34500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:12.740Z] [346/1108] rows 34501-34600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:13.463Z] [347/1108] rows 34601-34700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:14.210Z] [348/1108] rows 34701-34800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:14.936Z] [349/1108] rows 34801-34900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:15.680Z] [350/1108] rows 34901-35000: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:16.391Z] [351/1108] rows 35001-35100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:17.078Z] [352/1108] rows 35101-35200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:17.896Z] [353/1108] rows 35201-35300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:18.624Z] [354/1108] rows 35301-35400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:19.281Z] [355/1108] rows 35401-35500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:19.937Z] [356/1108] rows 35501-35600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:20.759Z] [357/1108] rows 35601-35700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:21.460Z] [358/1108] rows 35701-35800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:22.219Z] [359/1108] rows 35801-35900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:23.021Z] [360/1108] rows 35901-36000: 98 users (8 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:23.737Z] [361/1108] rows 36001-36100: 100 users (12 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:24.429Z] [362/1108] rows 36101-36200: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:25.218Z] [363/1108] rows 36201-36300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:25.863Z] [364/1108] rows 36301-36400: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:26.609Z] [365/1108] rows 36401-36500: 100 users (13 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:27.286Z] [366/1108] rows 36501-36600: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:28.145Z] [367/1108] rows 36601-36700: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:29.077Z] [368/1108] rows 36701-36800: 100 users (7 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:29.777Z] [369/1108] rows 36801-36900: 100 users (8 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:30.569Z] [370/1108] rows 36901-37000: 100 users (7 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:31.328Z] [371/1108] rows 37001-37100: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:32.043Z] [372/1108] rows 37101-37200: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:32.736Z] [373/1108] rows 37201-37300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:33.452Z] [374/1108] rows 37301-37400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:34.305Z] [375/1108] rows 37401-37500: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:35.105Z] [376/1108] rows 37501-37600: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:35.928Z] [377/1108] rows 37601-37700: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:36.558Z] [378/1108] rows 37701-37800: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:37.264Z] [379/1108] rows 37801-37900: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:37.989Z] [380/1108] rows 37901-38000: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:38.637Z] [381/1108] rows 38001-38100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:39.286Z] [382/1108] rows 38101-38200: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:39.920Z] [383/1108] rows 38201-38300: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:40.601Z] [384/1108] rows 38301-38400: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:41.448Z] [385/1108] rows 38401-38500: 96 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:42.173Z] [386/1108] rows 38501-38600: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:42.887Z] [387/1108] rows 38601-38700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:43.536Z] [388/1108] rows 38701-38800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:44.162Z] [389/1108] rows 38801-38900: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:44.839Z] [390/1108] rows 38901-39000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:45.570Z] [391/1108] rows 39001-39100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:46.269Z] [392/1108] rows 39101-39200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:46.983Z] [393/1108] rows 39201-39300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:47.657Z] [394/1108] rows 39301-39400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:48.381Z] [395/1108] rows 39401-39500: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:49.041Z] [396/1108] rows 39501-39600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:49.853Z] [397/1108] rows 39601-39700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:50.669Z] [398/1108] rows 39701-39800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:51.338Z] [399/1108] rows 39801-39900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:08:51.970Z] [400/1108] rows 39901-40000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-04T07:09:37.016Z] ERROR:   chunk 401 attempt 1/6 failed: Timed out after 45000ms: chunk 401 attempt 1
+[2026-07-04T07:09:37.017Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:10:32.034Z] ERROR:   chunk 401 attempt 2/6 failed: Timed out after 45000ms: chunk 401 attempt 2
+[2026-07-04T07:10:32.036Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:11:37.076Z] ERROR:   chunk 401 attempt 3/6 failed: Timed out after 45000ms: chunk 401 attempt 3
+[2026-07-04T07:11:37.077Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:13:02.103Z] ERROR:   chunk 401 attempt 4/6 failed: Timed out after 45000ms: chunk 401 attempt 4
+[2026-07-04T07:13:02.104Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:14:47.136Z] ERROR:   chunk 401 attempt 5/6 failed: Timed out after 45000ms: chunk 401 attempt 5
+[2026-07-04T07:14:47.138Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:20:00.590Z] ERROR:   chunk 401 attempt 6/6 failed: Timed out after 45000ms: chunk 401 attempt 6
+[2026-07-04T07:20:00.593Z] ERROR: Fatal: Timed out after 45000ms: chunk 401 attempt 6
+[2026-07-04T07:20:00.595Z] === Migration run ended (fatal error) ===
+
+[2026-07-04T13:21:32] --- triggered by scheduled task ---
+[2026-07-04T07:51:33.215Z] === Migration run started ===
+[2026-07-04T07:51:33.219Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-04T07:52:23.610Z] Loaded 110798 total rows from source.
+[2026-07-04T07:52:23.612Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-04T07:52:24.886Z]   1726 existing user doc(s) indexed by uid.
+[2026-07-04T07:52:24.889Z] Resuming from checkpoint: offset 40000 (1704 users, 39890 attendance written so far, 110 skipped).
+[2026-07-04T07:53:09.920Z] ERROR:   chunk 401 attempt 1/6 failed: Timed out after 45000ms: chunk 401 attempt 1
+[2026-07-04T07:53:09.922Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:54:04.950Z] ERROR:   chunk 401 attempt 2/6 failed: Timed out after 45000ms: chunk 401 attempt 2
+[2026-07-04T07:54:04.952Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:55:09.984Z] ERROR:   chunk 401 attempt 3/6 failed: Timed out after 45000ms: chunk 401 attempt 3
+[2026-07-04T07:55:09.987Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:56:35.012Z] ERROR:   chunk 401 attempt 4/6 failed: Timed out after 45000ms: chunk 401 attempt 4
+[2026-07-04T07:56:35.014Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T07:58:20.104Z] ERROR:   chunk 401 attempt 5/6 failed: Timed out after 45000ms: chunk 401 attempt 5
+[2026-07-04T07:58:20.108Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-04T08:00:35.133Z] ERROR:   chunk 401 attempt 6/6 failed: Timed out after 45000ms: chunk 401 attempt 6
+[2026-07-04T08:00:35.135Z] ERROR: Fatal: Timed out after 45000ms: chunk 401 attempt 6
+[2026-07-04T08:00:35.137Z] === Migration run ended (fatal error) ===
+
+[2026-07-05T07:05:27.735Z] === Migration run started ===
+[2026-07-05T07:05:27.747Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-05T07:06:58.611Z] Loaded 110798 total rows from source.
+[2026-07-05T07:06:58.615Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-05T07:07:00.717Z]   1726 existing user doc(s) indexed by uid.
+[2026-07-05T07:07:00.720Z] Resuming from checkpoint: offset 40000 (1704 users, 39890 attendance written so far, 110 skipped).
+[2026-07-05T07:07:01.910Z] [401/1108] rows 40001-40100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:02.692Z] [402/1108] rows 40101-40200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:03.458Z] [403/1108] rows 40201-40300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:04.198Z] [404/1108] rows 40301-40400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:04.927Z] [405/1108] rows 40401-40500: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:05.661Z] [406/1108] rows 40501-40600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:06.379Z] [407/1108] rows 40601-40700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:07.285Z] [408/1108] rows 40701-40800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:08.047Z] [409/1108] rows 40801-40900: 92 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:08.747Z] [410/1108] rows 40901-41000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:09.418Z] [411/1108] rows 41001-41100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:10.088Z] [412/1108] rows 41101-41200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:10.728Z] [413/1108] rows 41201-41300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:11.371Z] [414/1108] rows 41301-41400: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:12.092Z] [415/1108] rows 41401-41500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:12.833Z] [416/1108] rows 41501-41600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:13.544Z] [417/1108] rows 41601-41700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:14.287Z] [418/1108] rows 41701-41800: 82 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:14.952Z] [419/1108] rows 41801-41900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:15.710Z] [420/1108] rows 41901-42000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:16.424Z] [421/1108] rows 42001-42100: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:17.077Z] [422/1108] rows 42101-42200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:17.736Z] [423/1108] rows 42201-42300: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:18.469Z] [424/1108] rows 42301-42400: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:19.116Z] [425/1108] rows 42401-42500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:19.809Z] [426/1108] rows 42501-42600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:20.439Z] [427/1108] rows 42601-42700: 92 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:21.083Z] [428/1108] rows 42701-42800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:21.776Z] [429/1108] rows 42801-42900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:22.419Z] [430/1108] rows 42901-43000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:23.055Z] [431/1108] rows 43001-43100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:23.796Z] [432/1108] rows 43101-43200: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:24.443Z] [433/1108] rows 43201-43300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:25.088Z] [434/1108] rows 43301-43400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:25.733Z] [435/1108] rows 43401-43500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:26.388Z] [436/1108] rows 43501-43600: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:27.081Z] [437/1108] rows 43601-43700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:27.772Z] [438/1108] rows 43701-43800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:28.411Z] [439/1108] rows 43801-43900: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:29.049Z] [440/1108] rows 43901-44000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:29.722Z] [441/1108] rows 44001-44100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:30.428Z] [442/1108] rows 44101-44200: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:31.025Z] [443/1108] rows 44201-44300: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:31.671Z] [444/1108] rows 44301-44400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:32.289Z] [445/1108] rows 44401-44500: 89 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:32.942Z] [446/1108] rows 44501-44600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:33.665Z] [447/1108] rows 44601-44700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:34.306Z] [448/1108] rows 44701-44800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:34.958Z] [449/1108] rows 44801-44900: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:35.594Z] [450/1108] rows 44901-45000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:36.223Z] [451/1108] rows 45001-45100: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:36.839Z] [452/1108] rows 45101-45200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:37.458Z] [453/1108] rows 45201-45300: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:38.094Z] [454/1108] rows 45301-45400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:38.724Z] [455/1108] rows 45401-45500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:39.420Z] [456/1108] rows 45501-45600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:40.043Z] [457/1108] rows 45601-45700: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:40.737Z] [458/1108] rows 45701-45800: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:41.376Z] [459/1108] rows 45801-45900: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:42.004Z] [460/1108] rows 45901-46000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:42.685Z] [461/1108] rows 46001-46100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:43.347Z] [462/1108] rows 46101-46200: 92 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:44.052Z] [463/1108] rows 46201-46300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:44.677Z] [464/1108] rows 46301-46400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:45.322Z] [465/1108] rows 46401-46500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:46.092Z] [466/1108] rows 46501-46600: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:46.771Z] [467/1108] rows 46601-46700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:47.436Z] [468/1108] rows 46701-46800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:48.122Z] [469/1108] rows 46801-46900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:48.782Z] [470/1108] rows 46901-47000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:49.398Z] [471/1108] rows 47001-47100: 66 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:50.021Z] [472/1108] rows 47101-47200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:50.670Z] [473/1108] rows 47201-47300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:51.388Z] [474/1108] rows 47301-47400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:52.021Z] [475/1108] rows 47401-47500: 92 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:52.678Z] [476/1108] rows 47501-47600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:53.327Z] [477/1108] rows 47601-47700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:53.982Z] [478/1108] rows 47701-47800: 89 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:54.666Z] [479/1108] rows 47801-47900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:55.329Z] [480/1108] rows 47901-48000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:56.052Z] [481/1108] rows 48001-48100: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:56.663Z] [482/1108] rows 48101-48200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:57.277Z] [483/1108] rows 48201-48300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:57.943Z] [484/1108] rows 48301-48400: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:58.590Z] [485/1108] rows 48401-48500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:59.288Z] [486/1108] rows 48501-48600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:07:59.979Z] [487/1108] rows 48601-48700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:00.655Z] [488/1108] rows 48701-48800: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:01.344Z] [489/1108] rows 48801-48900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:01.982Z] [490/1108] rows 48901-49000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:02.632Z] [491/1108] rows 49001-49100: 97 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:03.245Z] [492/1108] rows 49101-49200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:03.968Z] [493/1108] rows 49201-49300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:04.599Z] [494/1108] rows 49301-49400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:05.231Z] [495/1108] rows 49401-49500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:05.922Z] [496/1108] rows 49501-49600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:06.548Z] [497/1108] rows 49601-49700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:07.164Z] [498/1108] rows 49701-49800: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:07.939Z] [499/1108] rows 49801-49900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:08.580Z] [500/1108] rows 49901-50000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:09.237Z] [501/1108] rows 50001-50100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:09.876Z] [502/1108] rows 50101-50200: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:10.589Z] [503/1108] rows 50201-50300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:11.272Z] [504/1108] rows 50301-50400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:11.991Z] [505/1108] rows 50401-50500: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:12.718Z] [506/1108] rows 50501-50600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:13.348Z] [507/1108] rows 50601-50700: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:13.974Z] [508/1108] rows 50701-50800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:14.709Z] [509/1108] rows 50801-50900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:15.354Z] [510/1108] rows 50901-51000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:16.091Z] [511/1108] rows 51001-51100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:16.714Z] [512/1108] rows 51101-51200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:17.352Z] [513/1108] rows 51201-51300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:17.990Z] [514/1108] rows 51301-51400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:18.609Z] [515/1108] rows 51401-51500: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:19.264Z] [516/1108] rows 51501-51600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:19.895Z] [517/1108] rows 51601-51700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:20.522Z] [518/1108] rows 51701-51800: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:21.169Z] [519/1108] rows 51801-51900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:21.808Z] [520/1108] rows 51901-52000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:22.464Z] [521/1108] rows 52001-52100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:23.193Z] [522/1108] rows 52101-52200: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:23.868Z] [523/1108] rows 52201-52300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:24.533Z] [524/1108] rows 52301-52400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:25.247Z] [525/1108] rows 52401-52500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:25.933Z] [526/1108] rows 52501-52600: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:26.613Z] [527/1108] rows 52601-52700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:27.234Z] [528/1108] rows 52701-52800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:27.879Z] [529/1108] rows 52801-52900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:28.503Z] [530/1108] rows 52901-53000: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:29.184Z] [531/1108] rows 53001-53100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:29.900Z] [532/1108] rows 53101-53200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:30.556Z] [533/1108] rows 53201-53300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:31.260Z] [534/1108] rows 53301-53400: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:31.919Z] [535/1108] rows 53401-53500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:32.579Z] [536/1108] rows 53501-53600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:33.221Z] [537/1108] rows 53601-53700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:34.009Z] [538/1108] rows 53701-53800: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:34.665Z] [539/1108] rows 53801-53900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:35.371Z] [540/1108] rows 53901-54000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:36.051Z] [541/1108] rows 54001-54100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:36.680Z] [542/1108] rows 54101-54200: 94 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:37.312Z] [543/1108] rows 54201-54300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:37.958Z] [544/1108] rows 54301-54400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:38.575Z] [545/1108] rows 54401-54500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:39.259Z] [546/1108] rows 54501-54600: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:39.953Z] [547/1108] rows 54601-54700: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:40.659Z] [548/1108] rows 54701-54800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:41.270Z] [549/1108] rows 54801-54900: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:41.941Z] [550/1108] rows 54901-55000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:42.573Z] [551/1108] rows 55001-55100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:43.199Z] [552/1108] rows 55101-55200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:43.864Z] [553/1108] rows 55201-55300: 92 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:44.513Z] [554/1108] rows 55301-55400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:45.285Z] [555/1108] rows 55401-55500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:45.946Z] [556/1108] rows 55501-55600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:46.618Z] [557/1108] rows 55601-55700: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:47.271Z] [558/1108] rows 55701-55800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:47.969Z] [559/1108] rows 55801-55900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:48.694Z] [560/1108] rows 55901-56000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:49.450Z] [561/1108] rows 56001-56100: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:50.237Z] [562/1108] rows 56101-56200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:50.887Z] [563/1108] rows 56201-56300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:51.552Z] [564/1108] rows 56301-56400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:52.217Z] [565/1108] rows 56401-56500: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:52.886Z] [566/1108] rows 56501-56600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:53.534Z] [567/1108] rows 56601-56700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:54.207Z] [568/1108] rows 56701-56800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:54.843Z] [569/1108] rows 56801-56900: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:55.536Z] [570/1108] rows 56901-57000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:56.212Z] [571/1108] rows 57001-57100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:57.035Z] [572/1108] rows 57101-57200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:57.657Z] [573/1108] rows 57201-57300: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:58.295Z] [574/1108] rows 57301-57400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:58.928Z] [575/1108] rows 57401-57500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:08:59.672Z] [576/1108] rows 57501-57600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:00.329Z] [577/1108] rows 57601-57700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:00.976Z] [578/1108] rows 57701-57800: 99 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:01.627Z] [579/1108] rows 57801-57900: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:02.337Z] [580/1108] rows 57901-58000: 98 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:02.991Z] [581/1108] rows 58001-58100: 85 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:03.694Z] [582/1108] rows 58101-58200: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:04.352Z] [583/1108] rows 58201-58300: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:05.009Z] [584/1108] rows 58301-58400: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:05.629Z] [585/1108] rows 58401-58500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:06.251Z] [586/1108] rows 58501-58600: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:06.897Z] [587/1108] rows 58601-58700: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:07.537Z] [588/1108] rows 58701-58800: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:08.189Z] [589/1108] rows 58801-58900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:08.816Z] [590/1108] rows 58901-59000: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:09.495Z] [591/1108] rows 59001-59100: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:10.165Z] [592/1108] rows 59101-59200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:10.801Z] [593/1108] rows 59201-59300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:11.447Z] [594/1108] rows 59301-59400: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:12.257Z] [595/1108] rows 59401-59500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:12.897Z] [596/1108] rows 59501-59600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:13.630Z] [597/1108] rows 59601-59700: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:14.351Z] [598/1108] rows 59701-59800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:14.984Z] [599/1108] rows 59801-59900: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:09:15.683Z] [600/1108] rows 59901-60000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-05T07:10:00.697Z] ERROR:   chunk 601 attempt 1/6 failed: Timed out after 45000ms: chunk 601 attempt 1
+[2026-07-05T07:10:00.699Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-05T07:10:55.731Z] ERROR:   chunk 601 attempt 2/6 failed: Timed out after 45000ms: chunk 601 attempt 2
+[2026-07-05T07:10:55.734Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-05T07:12:00.759Z] ERROR:   chunk 601 attempt 3/6 failed: Timed out after 45000ms: chunk 601 attempt 3
+[2026-07-05T07:12:00.761Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-05T07:13:25.805Z] ERROR:   chunk 601 attempt 4/6 failed: Timed out after 45000ms: chunk 601 attempt 4
+[2026-07-05T07:13:25.807Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-05T07:15:10.840Z] ERROR:   chunk 601 attempt 5/6 failed: Timed out after 45000ms: chunk 601 attempt 5
+[2026-07-05T07:15:10.842Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-05T07:17:25.864Z] ERROR:   chunk 601 attempt 6/6 failed: Timed out after 45000ms: chunk 601 attempt 6
+[2026-07-05T07:17:25.866Z] ERROR: Fatal: Timed out after 45000ms: chunk 601 attempt 6
+[2026-07-05T07:17:25.868Z] === Migration run ended (fatal error) ===
+
+[2026-07-06T08:53:39.795Z] === Migration run started ===
+[2026-07-06T08:53:39.811Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-06T08:54:48.120Z] Loaded 110798 total rows from source.
+[2026-07-06T08:54:48.124Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-06T08:54:49.875Z]   1831 existing user doc(s) indexed by uid.
+[2026-07-06T08:54:49.877Z] Resuming from checkpoint: offset 60000 (1809 users, 59890 attendance written so far, 110 skipped).
+[2026-07-06T08:54:51.003Z] [601/1108] rows 60001-60100: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:51.960Z] [602/1108] rows 60101-60200: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:52.882Z] [603/1108] rows 60201-60300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:53.808Z] [604/1108] rows 60301-60400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:54.804Z] [605/1108] rows 60401-60500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:55.663Z] [606/1108] rows 60501-60600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:56.602Z] [607/1108] rows 60601-60700: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:57.427Z] [608/1108] rows 60701-60800: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:58.264Z] [609/1108] rows 60801-60900: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:59.118Z] [610/1108] rows 60901-61000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:54:59.927Z] [611/1108] rows 61001-61100: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:00.892Z] [612/1108] rows 61101-61200: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:01.764Z] [613/1108] rows 61201-61300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:02.646Z] [614/1108] rows 61301-61400: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:03.463Z] [615/1108] rows 61401-61500: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:04.248Z] [616/1108] rows 61501-61600: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:05.062Z] [617/1108] rows 61601-61700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:05.915Z] [618/1108] rows 61701-61800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:06.804Z] [619/1108] rows 61801-61900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:07.751Z] [620/1108] rows 61901-62000: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:08.588Z] [621/1108] rows 62001-62100: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:09.393Z] [622/1108] rows 62101-62200: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:10.166Z] [623/1108] rows 62201-62300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:10.976Z] [624/1108] rows 62301-62400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:11.850Z] [625/1108] rows 62401-62500: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:12.665Z] [626/1108] rows 62501-62600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:13.451Z] [627/1108] rows 62601-62700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:14.260Z] [628/1108] rows 62701-62800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:15.139Z] [629/1108] rows 62801-62900: 67 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:15.943Z] [630/1108] rows 62901-63000: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:16.772Z] [631/1108] rows 63001-63100: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:17.531Z] [632/1108] rows 63101-63200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:18.292Z] [633/1108] rows 63201-63300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:19.101Z] [634/1108] rows 63301-63400: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:19.932Z] [635/1108] rows 63401-63500: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:20.675Z] [636/1108] rows 63501-63600: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:21.468Z] [637/1108] rows 63601-63700: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:22.282Z] [638/1108] rows 63701-63800: 84 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:23.152Z] [639/1108] rows 63801-63900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:23.990Z] [640/1108] rows 63901-64000: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:24.968Z] [641/1108] rows 64001-64100: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:25.840Z] [642/1108] rows 64101-64200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:26.634Z] [643/1108] rows 64201-64300: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:27.466Z] [644/1108] rows 64301-64400: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:28.183Z] [645/1108] rows 64401-64500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:29.090Z] [646/1108] rows 64501-64600: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:29.874Z] [647/1108] rows 64601-64700: 92 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:30.613Z] [648/1108] rows 64701-64800: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:31.354Z] [649/1108] rows 64801-64900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:32.170Z] [650/1108] rows 64901-65000: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:32.965Z] [651/1108] rows 65001-65100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:33.703Z] [652/1108] rows 65101-65200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:34.581Z] [653/1108] rows 65201-65300: 91 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:35.351Z] [654/1108] rows 65301-65400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:36.221Z] [655/1108] rows 65401-65500: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:37.044Z] [656/1108] rows 65501-65600: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:37.876Z] [657/1108] rows 65601-65700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:38.747Z] [658/1108] rows 65701-65800: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:39.558Z] [659/1108] rows 65801-65900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:40.401Z] [660/1108] rows 65901-66000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:41.187Z] [661/1108] rows 66001-66100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:42.004Z] [662/1108] rows 66101-66200: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:42.815Z] [663/1108] rows 66201-66300: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:43.583Z] [664/1108] rows 66301-66400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:44.393Z] [665/1108] rows 66401-66500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:45.177Z] [666/1108] rows 66501-66600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:45.989Z] [667/1108] rows 66601-66700: 95 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:47.050Z] [668/1108] rows 66701-66800: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:48.077Z] [669/1108] rows 66801-66900: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:48.887Z] [670/1108] rows 66901-67000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:49.637Z] [671/1108] rows 67001-67100: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:50.487Z] [672/1108] rows 67101-67200: 91 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:51.287Z] [673/1108] rows 67201-67300: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:52.296Z] [674/1108] rows 67301-67400: 96 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:53.224Z] [675/1108] rows 67401-67500: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:54.064Z] [676/1108] rows 67501-67600: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:54.950Z] [677/1108] rows 67601-67700: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:55.781Z] [678/1108] rows 67701-67800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:56.586Z] [679/1108] rows 67801-67900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:57.396Z] [680/1108] rows 67901-68000: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:58.342Z] [681/1108] rows 68001-68100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:59.098Z] [682/1108] rows 68101-68200: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:55:59.852Z] [683/1108] rows 68201-68300: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:00.770Z] [684/1108] rows 68301-68400: 98 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:01.624Z] [685/1108] rows 68401-68500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:02.460Z] [686/1108] rows 68501-68600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:03.263Z] [687/1108] rows 68601-68700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:04.147Z] [688/1108] rows 68701-68800: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:04.901Z] [689/1108] rows 68801-68900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:05.788Z] [690/1108] rows 68901-69000: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:06.598Z] [691/1108] rows 69001-69100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:07.452Z] [692/1108] rows 69101-69200: 95 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:08.329Z] [693/1108] rows 69201-69300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:09.044Z] [694/1108] rows 69301-69400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:09.851Z] [695/1108] rows 69401-69500: 100 users (9 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:10.703Z] [696/1108] rows 69501-69600: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:11.661Z] [697/1108] rows 69601-69700: 97 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:12.548Z] [698/1108] rows 69701-69800: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:13.290Z] [699/1108] rows 69801-69900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:14.137Z] [700/1108] rows 69901-70000: 92 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:14.922Z] [701/1108] rows 70001-70100: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:15.750Z] [702/1108] rows 70101-70200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:16.628Z] [703/1108] rows 70201-70300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:17.438Z] [704/1108] rows 70301-70400: 94 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:18.216Z] [705/1108] rows 70401-70500: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:19.056Z] [706/1108] rows 70501-70600: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:19.952Z] [707/1108] rows 70601-70700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:20.734Z] [708/1108] rows 70701-70800: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:21.545Z] [709/1108] rows 70801-70900: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:22.302Z] [710/1108] rows 70901-71000: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:23.117Z] [711/1108] rows 71001-71100: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:24.039Z] [712/1108] rows 71101-71200: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:24.798Z] [713/1108] rows 71201-71300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:25.551Z] [714/1108] rows 71301-71400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:26.336Z] [715/1108] rows 71401-71500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:27.078Z] [716/1108] rows 71501-71600: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:28.057Z] [717/1108] rows 71601-71700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:28.913Z] [718/1108] rows 71701-71800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:29.647Z] [719/1108] rows 71801-71900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:30.474Z] [720/1108] rows 71901-72000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:31.319Z] [721/1108] rows 72001-72100: 94 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:32.127Z] [722/1108] rows 72101-72200: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:36.612Z] [723/1108] rows 72201-72300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:37.339Z] [724/1108] rows 72301-72400: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:38.066Z] [725/1108] rows 72401-72500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:38.810Z] [726/1108] rows 72501-72600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:39.642Z] [727/1108] rows 72601-72700: 94 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:40.417Z] [728/1108] rows 72701-72800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:41.252Z] [729/1108] rows 72801-72900: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:42.046Z] [730/1108] rows 72901-73000: 99 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:42.763Z] [731/1108] rows 73001-73100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:43.505Z] [732/1108] rows 73101-73200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:44.228Z] [733/1108] rows 73201-73300: 96 users (16 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:44.997Z] [734/1108] rows 73301-73400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:45.792Z] [735/1108] rows 73401-73500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:46.542Z] [736/1108] rows 73501-73600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:47.395Z] [737/1108] rows 73601-73700: 97 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:48.228Z] [738/1108] rows 73701-73800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:48.993Z] [739/1108] rows 73801-73900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:49.666Z] [740/1108] rows 73901-74000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:50.438Z] [741/1108] rows 74001-74100: 93 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:51.126Z] [742/1108] rows 74101-74200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:51.908Z] [743/1108] rows 74201-74300: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:52.645Z] [744/1108] rows 74301-74400: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:53.395Z] [745/1108] rows 74401-74500: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:54.117Z] [746/1108] rows 74501-74600: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:54.865Z] [747/1108] rows 74601-74700: 98 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:55.557Z] [748/1108] rows 74701-74800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:56.241Z] [749/1108] rows 74801-74900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:56.985Z] [750/1108] rows 74901-75000: 94 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:57.694Z] [751/1108] rows 75001-75100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:58.395Z] [752/1108] rows 75101-75200: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:59.114Z] [753/1108] rows 75201-75300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:56:59.799Z] [754/1108] rows 75301-75400: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:00.549Z] [755/1108] rows 75401-75500: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:01.253Z] [756/1108] rows 75501-75600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:01.983Z] [757/1108] rows 75601-75700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:02.710Z] [758/1108] rows 75701-75800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:03.440Z] [759/1108] rows 75801-75900: 84 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:04.177Z] [760/1108] rows 75901-76000: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:04.901Z] [761/1108] rows 76001-76100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:05.716Z] [762/1108] rows 76101-76200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:06.397Z] [763/1108] rows 76201-76300: 87 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:07.121Z] [764/1108] rows 76301-76400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:07.884Z] [765/1108] rows 76401-76500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:08.682Z] [766/1108] rows 76501-76600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:09.403Z] [767/1108] rows 76601-76700: 77 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:10.109Z] [768/1108] rows 76701-76800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:10.818Z] [769/1108] rows 76801-76900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:11.504Z] [770/1108] rows 76901-77000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:12.220Z] [771/1108] rows 77001-77100: 79 users (10 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:12.983Z] [772/1108] rows 77101-77200: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:13.741Z] [773/1108] rows 77201-77300: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:14.495Z] [774/1108] rows 77301-77400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:15.234Z] [775/1108] rows 77401-77500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:15.925Z] [776/1108] rows 77501-77600: 67 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:16.636Z] [777/1108] rows 77601-77700: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:17.387Z] [778/1108] rows 77701-77800: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:18.202Z] [779/1108] rows 77801-77900: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:18.974Z] [780/1108] rows 77901-78000: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:19.680Z] [781/1108] rows 78001-78100: 97 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:20.434Z] [782/1108] rows 78101-78200: 60 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:21.275Z] [783/1108] rows 78201-78300: 98 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:21.993Z] [784/1108] rows 78301-78400: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:22.696Z] [785/1108] rows 78401-78500: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:23.391Z] [786/1108] rows 78501-78600: 98 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:24.137Z] [787/1108] rows 78601-78700: 98 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:24.906Z] [788/1108] rows 78701-78800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:25.622Z] [789/1108] rows 78801-78900: 94 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:26.325Z] [790/1108] rows 78901-79000: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:27.033Z] [791/1108] rows 79001-79100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:27.858Z] [792/1108] rows 79101-79200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:28.581Z] [793/1108] rows 79201-79300: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:29.282Z] [794/1108] rows 79301-79400: 91 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:29.986Z] [795/1108] rows 79401-79500: 79 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:30.714Z] [796/1108] rows 79501-79600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:31.408Z] [797/1108] rows 79601-79700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:32.133Z] [798/1108] rows 79701-79800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:32.838Z] [799/1108] rows 79801-79900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:57:33.625Z] [800/1108] rows 79901-80000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-06T08:58:18.671Z] ERROR:   chunk 801 attempt 1/6 failed: Timed out after 45000ms: chunk 801 attempt 1
+[2026-07-06T08:58:18.673Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T08:59:13.707Z] ERROR:   chunk 801 attempt 2/6 failed: Timed out after 45000ms: chunk 801 attempt 2
+[2026-07-06T08:59:13.708Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T09:00:18.751Z] ERROR:   chunk 801 attempt 3/6 failed: Timed out after 45000ms: chunk 801 attempt 3
+[2026-07-06T09:00:18.752Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T09:01:43.772Z] ERROR:   chunk 801 attempt 4/6 failed: Timed out after 45000ms: chunk 801 attempt 4
+[2026-07-06T09:01:43.774Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T09:03:28.813Z] ERROR:   chunk 801 attempt 5/6 failed: Timed out after 45000ms: chunk 801 attempt 5
+[2026-07-06T09:03:28.815Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T09:05:43.841Z] ERROR:   chunk 801 attempt 6/6 failed: Timed out after 45000ms: chunk 801 attempt 6
+[2026-07-06T09:05:43.843Z] ERROR: Fatal: Timed out after 45000ms: chunk 801 attempt 6
+[2026-07-06T09:05:43.845Z] === Migration run ended (fatal error) ===
+
