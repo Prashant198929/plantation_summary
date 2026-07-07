@@ -1271,17 +1271,14 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                                               height: 80,
                                                                               child: Image.file(File(pickedImage!.path), fit: BoxFit.cover),
                                                                             )
-                                                                          : (plantData['localImagePath'] != null &&
-                                                                                File(plantData['localImagePath']).existsSync()
-                                                                              ? SizedBox(
+                                                                          : (((plantData['imageUrl'] as String?)?.isNotEmpty ?? false) ||
+                                                                                  (plantData['localImagePath'] != null &&
+                                                                                      File(plantData['localImagePath']).existsSync())
+                                                                              ? PlantImage(
+                                                                                  imageUrl: plantData['imageUrl'],
+                                                                                  localImagePath: plantData['localImagePath'],
                                                                                   width: 80,
                                                                                   height: 80,
-                                                                                  child: Image.file(
-                                                                                    File(plantData['localImagePath']),
-                                                                                    fit: BoxFit.cover,
-                                                                                    errorBuilder: (context, error, stackTrace) =>
-                                                                                        const Icon(Icons.broken_image),
-                                                                                  ),
                                                                                 )
                                                                               : const Text('छायाचित्र निवडलेले नाही')),
                                                                     ],

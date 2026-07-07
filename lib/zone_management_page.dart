@@ -1039,17 +1039,14 @@ class _PlantListPageState extends State<PlantListPage> {
                                       fit: BoxFit.cover,
                                     ),
                                   )
-                                : (plantData['localImagePath'] != null &&
-                                        File(plantData['localImagePath']).existsSync()
-                                    ? SizedBox(
+                                : (((plantData['imageUrl'] as String?)?.isNotEmpty ?? false) ||
+                                        (plantData['localImagePath'] != null &&
+                                            File(plantData['localImagePath']).existsSync())
+                                    ? PlantImage(
+                                        imageUrl: plantData['imageUrl'],
+                                        localImagePath: plantData['localImagePath'],
                                         width: 80,
                                         height: 80,
-                                        child: Image.file(
-                                          File(plantData['localImagePath']),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) =>
-                                              const Icon(Icons.broken_image),
-                                        ),
                                       )
                                     : const Text('फोटो निवडला नाही')),
                           ],
