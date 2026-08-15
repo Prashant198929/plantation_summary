@@ -6,8 +6,8 @@ import 'attendance_support.dart';
 
 class AttendanceDetails extends StatefulWidget {
   final int year;
-  final String? place;
-  final String? zone;
+  final List<String>? places;
+  final List<String>? zones;
   final FirebaseFirestore firestore;
   final DateTime? startDate;
   final DateTime? endDate;
@@ -15,8 +15,8 @@ class AttendanceDetails extends StatefulWidget {
   const AttendanceDetails({
     Key? key,
     required this.year,
-    required this.place,
-    required this.zone,
+    required this.places,
+    required this.zones,
     required this.firestore,
     this.startDate,
     this.endDate,
@@ -62,8 +62,8 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
         description: 'Attendance details opened',
         details: {
           'year': widget.year,
-          'place': widget.place,
-          'zone': widget.zone,
+          'places': widget.places,
+          'zones': widget.zones,
         },
       );
     });
@@ -73,8 +73,14 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
     for (int m = 1; m <= 12; m++) {
       monthMap[m] = [];
     }
-    DateTime start = widget.startDate ?? DateTime(widget.year, 1, 1);
-    DateTime end = widget.endDate ?? DateTime(widget.year, 12, 31, 23, 59, 59);
+    final rawStart = widget.startDate;
+    DateTime start = rawStart != null
+        ? DateTime(rawStart.year, rawStart.month, rawStart.day)
+        : DateTime(widget.year, 1, 1);
+    final rawEnd = widget.endDate;
+    DateTime end = rawEnd != null
+        ? DateTime(rawEnd.year, rawEnd.month, rawEnd.day, 23, 59, 59, 999)
+        : DateTime(widget.year, 12, 31, 23, 59, 59);
     final monthKeys = AttendanceSupport.monthYearKeysBetween(start, end);
     final allRecords = <Map<String, dynamic>>[];
     for (final key in monthKeys) {
@@ -91,9 +97,18 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
       }
     }
 
-    String filterPlace = _normalizePlace(widget.place);
-    String filterZone = (widget.zone ?? '').trim().toLowerCase();
-    String filterZoneNormalized = _normalizeZone(widget.zone);
+    final filterPlaces = (widget.places ?? [])
+        .map(_normalizePlace)
+        .where((p) => p.isNotEmpty)
+        .toSet();
+    final filterZonesNormalized = (widget.zones ?? [])
+        .map((z) => _normalizeZone(z))
+        .where((z) => z.isNotEmpty)
+        .toSet();
+    final filterZonesRaw = (widget.zones ?? [])
+        .map((z) => z.trim().toLowerCase())
+        .where((z) => z.isNotEmpty)
+        .toSet();
 
     for (final record in allRecords) {
       DateTime? date;
@@ -109,31 +124,19 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
           .toLowerCase();
       String recordZoneNormalized = _normalizeZone(record['zone']?.toString());
 
-      bool zoneMatches = filterZone.isEmpty
+      bool zoneMatches = filterZonesRaw.isEmpty
           ? true
-          : (filterZoneNormalized.isNotEmpty &&
+          : (filterZonesNormalized.isNotEmpty &&
                   recordZoneNormalized.isNotEmpty)
-              ? recordZoneNormalized == filterZoneNormalized
-              : recordZone == filterZone;
+              ? filterZonesNormalized.contains(recordZoneNormalized)
+              : filterZonesRaw.contains(recordZone);
 
       bool matches =
           date != null &&
           date.year == widget.year &&
-          (filterPlace.isEmpty || recordPlace == filterPlace) &&
+          (filterPlaces.isEmpty || filterPlaces.contains(recordPlace)) &&
           zoneMatches;
 
-      print(
-        '[AttendanceDetails] Filter: year=${widget.year}, place="$filterPlace", zone="$filterZone", zoneNormalized="$filterZoneNormalized"',
-      );
-      print(
-        '[AttendanceDetails] Record: date=$date, month=${date?.month}, place="$recordPlace", zone="$recordZone", zoneNormalized="$recordZoneNormalized", matches=$matches',
-      );
-      print(
-        '[AttendanceDetails] Match breakdown: placeMatches=${filterPlace.isEmpty || recordPlace == filterPlace}, zoneMatches=$zoneMatches',
-      );
-      print(
-        '[DEBUG] Record raw: date=$date, month=${date?.month}, Location_Mr="${record['Location_Mr'] ?? record['Place']}", zone="${record['zone']}", matches=$matches',
-      );
       if (matches) {
         final month = date!.month;
         print('[DEBUG] Adding record to month $month');
@@ -302,18 +305,18 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
                                       details: {
                                         'year': widget.year,
                                         'month': month,
-                                        'place': widget.place,
-                                        'zone': widget.zone,
+                                        'places': widget.places,
+                                        'zones': widget.zones,
                                       },
                                     );
-                                    Navigator.push(
+                                    await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => AttendeeDetails(
                                           year: widget.year,
                                           month: month,
-                                          place: widget.place,
-                                          zone: widget.zone,
+                                          places: widget.places,
+                                          zones: widget.zones,
                                           firestore: widget.firestore,
                                           startDate:
                                               (widget.startDate != null &&
@@ -341,6 +344,16 @@ class _AttendanceDetailsState extends State<AttendanceDetails> {
                                         ),
                                       ),
                                     );
+                                    // A record may have been deleted on the
+                                    // attendee-list page — refresh the count
+                                    // shown against this month so it isn't
+                                    // stale after coming back.
+                                    if (mounted) {
+                                      setState(() {
+                                        isLoading = true;
+                                      });
+                                      await fetchAttendance();
+                                    }
                                   },
                                 ),
                               ],

@@ -21,6 +21,11 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _saveCredentials = false;
   bool _showPassword = false;
+  // The register button is only ever shown for the Administrator role.
+  // Nobody is authenticated yet on this screen, so the only pre-login
+  // signal available is a role lookup against previously-saved credentials
+  // (if any) — stays false (hidden) otherwise.
+  bool _isAdministrator = false;
 
   @override
   void initState() {
@@ -47,6 +52,24 @@ class _LoginPageState extends State<LoginPage> {
         _passwordController.text = savedPassword;
         _saveCredentials = true;
       });
+      await _checkAdministratorRole(savedMobile);
+    }
+  }
+
+  Future<void> _checkAdministratorRole(String mobile) async {
+    final encryptedMobile = MobileEncryptionService.encrypt(mobile) ?? mobile;
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('mobile', isEqualTo: encryptedMobile)
+          .limit(1)
+          .get();
+      if (query.docs.isEmpty) return;
+      final role = query.docs.first.data()['role']?.toString().toLowerCase() ?? '';
+      if (!mounted) return;
+      setState(() => _isAdministrator = role == 'administrator');
+    } catch (_) {
+      // Leave the register button hidden if the role lookup fails.
     }
   }
 
@@ -261,6 +284,23 @@ class _LoginPageState extends State<LoginPage> {
 
     final userDoc = query.docs.first;
     final userData = userDoc.data() as Map<String, dynamic>;
+
+    if (userData['role']?.toString() == 'Shree Sadasya') {
+      await FirebaseConfig.logEvent(
+        eventType: 'login_failed',
+        description: 'Login blocked - role Shree Sadasya',
+        userId: mobile,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'तुम्हाला अॅपमध्ये लॉगिन करण्याची परवानगी नाही. कृपया प्रशासकाशी संपर्क साधा.',
+          ),
+        ),
+      );
+      return;
+    }
+
     String email = _extractEmail(userData);
     if (email.isEmpty) {
       final updatedEmail = await _promptForEmailAndUpdate(
@@ -475,28 +515,23 @@ class _LoginPageState extends State<LoginPage> {
                         child: const Text('लॉगिन'),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          await FirebaseConfig.logEvent(
-                            eventType: 'register_nav_clicked',
-                            description: 'Register navigation clicked',
-                            userId: _mobileController.text.trim().isEmpty
-                                ? null
-                                : _mobileController.text.trim(),
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RegisterPage(),
-                            ),
-                          );
-                        },
-                        child: const Text('साइन अप / नोंदणी'),
+                    if (_isAdministrator) ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterPage(),
+                              ),
+                            );
+                          },
+                          child: const Text('साइन अप / नोंदणी'),
+                        ),
                       ),
-                    ),
+                    ],
                     const SizedBox(height: 4),
                     TextButton(
                       onPressed: () async {

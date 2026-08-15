@@ -20,6 +20,7 @@ import 'firebase_config.dart';
 import 'firebase_options.dart';
 import 'mobile_encryption_service.dart';
 import 'upload_queue_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,11 +155,10 @@ Future<Map<String, dynamic>?> getCurrentUserDetails(
       'baithak_mr': data['baithak_mr'] ?? '',
       'baithak_day': data['baithak_day'] ?? '',
       'baithak_day_mr': data['baithak_day_mr'] ?? '',
-      'hall': data['hall'] ?? '',
-      'hall_mr': data['hall_mr'] ?? '',
       'gender': data['gender'] ?? '',
       'dob': data['dob'] ?? '',
       'isActive': data['isActive'] ?? true,
+      'attendance_viewer': data['attendance_viewer'] ?? false,
     };
   } catch (e) {
     ScaffoldMessenger.of(
@@ -353,97 +353,98 @@ class _PlantationFormState extends State<PlantationForm> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 8,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('वृक्षमोजणी'),
-          bottom: TabBar(
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            isScrollable: true,
-            tabs: const [
-              Tab(icon: Icon(Icons.home_outlined), text: 'मुख्यपृष्ठ'),
-              Tab(icon: Icon(Icons.park_outlined), text: 'व्यवस्थापन'),
-              Tab(icon: Icon(Icons.list_alt_outlined), text: 'सर्व नोंदी'),
-              Tab(icon: Icon(Icons.campaign_outlined), text: 'प्रसारण'),
-              Tab(icon: Icon(Icons.bar_chart_outlined), text: 'अहवाल'),
-              Tab(icon: Icon(Icons.people_outline), text: 'वापरकर्ते'),
-              Tab(icon: Icon(Icons.fact_check_outlined), text: 'उपस्थिती'),
-              Tab(icon: Icon(Icons.info_outline), text: 'संपर्क'),
-            ],
-            onTap: (index) async {
-              const tabs = [
-                'मुख्यपृष्ठ', 'वनस्पती व्यवस्थापन', 'सर्व वनस्पती नोंदी',
-                'प्रसारण संदेश', 'अहवाल', 'वापरकर्ते', 'उपस्थिती', 'संपर्क',
-              ];
-              await FirebaseConfig.logEvent(
-                eventType: 'tab_clicked',
-                description: 'Tab selected: ${tabs[index]}',
-                userId: loggedInMobile,
-                details: {'tab': tabs[index]},
-              );
-            },
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _userDetailsFuture,
+      builder: (context, userSnap) {
+        if (userSnap.connectionState != ConnectionState.done) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        final role = userSnap.data?['role']?.toString().toLowerCase() ?? '';
+        // Administrator is a new, strictly higher tier than Super Admin —
+        // folded straight into isSuperAdmin so every existing super_admin
+        // gate (User Management, Broadcast, Report, ...) automatically
+        // extends to it too, without touching each gate separately. The
+        // finer-grained distinction (which role radio buttons a Super Admin
+        // vs. an Administrator can see) lives inside UserRoleManagementPage
+        // itself, driven by the raw `role` passed in as viewerRole.
+        final isAdministrator = role == 'administrator';
+        final isSuperAdmin = role == 'super_admin' || role == 'superadmin' || isAdministrator;
+        // admin gets everything except User Management
+        final isElevated = isSuperAdmin || role == 'admin';
+        final isZonalAdmin = role == 'zonal_admin';
+        final attendanceViewer = userSnap.data?['attendance_viewer'] == true;
+        final canViewAttendance = isElevated || attendanceViewer;
+        // Mirrors ZoneManagementPage's own internal hasAccess check
+        // (zone_management_page.dart:457) — plain 'user' role is blocked there
+        // too, so keep the tab itself out of the list for that role instead
+        // of letting them tap in and hit the internal "not authorized" screen.
+        final canManageZones = isElevated || isZonalAdmin;
+
+        // Only tabs the current role actually has access to are built here —
+        // an inaccessible tab is omitted entirely rather than shown locked.
+        final visibleTabs = <_TabEntry>[
+          _TabEntry(Icons.home_outlined, 'मुख्यपृष्ठ', 'मुख्यपृष्ठ', _HomeTab(userSnap: userSnap)),
+          if (canManageZones)
+            _TabEntry(Icons.park_outlined, 'व्यवस्थापन', 'वनस्पती व्यवस्थापन', ZoneManagementPage()),
+          _TabEntry(Icons.list_alt_outlined, 'सर्व नोंदी', 'सर्व वनस्पती नोंदी', const PlantationListPage()),
+          if (isElevated)
+            _TabEntry(Icons.campaign_outlined, 'प्रसारण', 'प्रसारण संदेश', const BroadcastPage()),
+          if (isElevated)
+            _TabEntry(Icons.bar_chart_outlined, 'अहवाल', 'अहवाल', const ReportPage()),
+          if (isSuperAdmin)
+            _TabEntry(Icons.people_outline, 'वापरकर्ते', 'वापरकर्ते', UserRoleManagementPage(viewerRole: role)),
+          if (canViewAttendance)
+            _TabEntry(Icons.fact_check_outlined, 'उपस्थिती', 'उपस्थिती',
+                AttendancePage(userFirestore: FirebaseFirestore.instance)),
+          _TabEntry(Icons.info_outline, 'संपर्क', 'संपर्क', _ContactTab()),
+        ];
+
+        return DefaultTabController(
+          length: visibleTabs.length,
+          child: Scaffold(
+            appBar: AppBar(
+              toolbarHeight: 44,
+              title: const Text('वृक्षमोजणी'),
+              bottom: TabBar(
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white60,
+                isScrollable: true,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+                tabs: visibleTabs
+                    .map((t) => Tab(icon: Icon(t.icon, size: 20), text: t.tabText, height: 52))
+                    .toList(),
+                onTap: (index) async {
+                  await FirebaseConfig.logEvent(
+                    eventType: 'tab_clicked',
+                    description: 'Tab selected: ${visibleTabs[index].logLabel}',
+                    userId: loggedInMobile,
+                    details: {'tab': visibleTabs[index].logLabel},
+                  );
+                },
+              ),
+            ),
+            body: TabBarView(
+              children: visibleTabs.map((t) => t.child).toList(),
+            ),
           ),
-        ),
-        body: FutureBuilder<Map<String, dynamic>?>(
-          future: _userDetailsFuture,
-          builder: (context, userSnap) {
-            final role = userSnap.connectionState == ConnectionState.done &&
-                    userSnap.hasData &&
-                    userSnap.data != null
-                ? userSnap.data!['role']?.toString().toLowerCase() ?? ''
-                : '';
-            final isSuperAdmin =
-                role == 'super_admin' || role == 'superadmin';
-            // admin gets everything except User Management
-            final isElevated = isSuperAdmin || role == 'admin';
-
-            return TabBarView(
-              children: [
-                // ── Home Tab ──────────────────────────────────────────
-                _HomeTab(userSnap: userSnap),
-
-                // ── Plant Management Tab ───────────────────────────────
-                ZoneManagementPage(),
-
-                // ── All Records Tab ────────────────────────────────────
-                const PlantationListPage(),
-
-                // ── Broadcast Tab ──────────────────────────────────────
-                isElevated
-                    ? const BroadcastPage()
-                    : _LockedTab(label: 'प्रसारण संदेश', icon: Icons.campaign_outlined),
-
-                // ── Reports Tab ────────────────────────────────────────
-                isElevated
-                    ? const ReportPage()
-                    : _LockedTab(label: 'अहवाल', icon: Icons.bar_chart_outlined),
-
-                // ── Users Tab — super_admin only ───────────────────────
-                isSuperAdmin
-                    ? const UserRoleManagementPage()
-                    : _LockedTab(label: 'वापरकर्ते', icon: Icons.people_outline),
-
-                // ── Attendance Tab ─────────────────────────────────────
-                isElevated
-                    ? AttendancePage(userFirestore: FirebaseFirestore.instance)
-                    : _LockedTab(label: 'उपस्थिती', icon: Icons.fact_check_outlined),
-
-                // ── Contact Tab ────────────────────────────────────────
-                _ContactTab(),
-              ],
-            );
-          },
-        ),
-      ),
+        );
+      },
     );
   }
 }
 
+class _TabEntry {
+  final IconData icon;
+  final String tabText;
+  final String logLabel;
+  final Widget child;
+  const _TabEntry(this.icon, this.tabText, this.logLabel, this.child);
+}
+
 String _roleLabel(String role) {
   const map = {
+    'administrator': 'मुख्य प्रशासक',
     'super_admin': 'सुपर प्रशासक',
     'superadmin': 'सुपर प्रशासक',
     'admin': 'प्रशासक',
@@ -471,7 +472,8 @@ class _HomeTab extends StatelessWidget {
     final userRole = userData?['role']?.toString() ?? '';
     final userZone = userData?['zone']?.toString() ?? '';
     final isSuperAdmin = userRole.toLowerCase() == 'super_admin' ||
-        userRole.toLowerCase() == 'superadmin';
+        userRole.toLowerCase() == 'superadmin' ||
+        userRole.toLowerCase() == 'administrator';
 
     final zoneNumber = userZone.replaceAll(RegExp(r'[^0-9]'), '');
     final svgPath = 'assets/zone_images/$zoneNumber.svg';
@@ -677,41 +679,44 @@ class _StatCard extends StatelessWidget {
 }
 
 // ── Locked Tab ────────────────────────────────────────────────────────────────
-
-class _LockedTab extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _LockedTab({required this.label, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.lock_outline, size: 40, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'फक्त सुपर प्रशासकाला प्रवेश आहे.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// No longer used now that inaccessible tabs are omitted entirely instead of
+// shown locked (see _TabEntry / visibleTabs in _PlantationFormState.build).
+// Kept commented out rather than deleted in case we want to revert.
+//
+// class _LockedTab extends StatelessWidget {
+//   final String label;
+//   final IconData icon;
+//   const _LockedTab({required this.label, required this.icon});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Container(
+//             padding: const EdgeInsets.all(20),
+//             decoration: BoxDecoration(
+//               color: Colors.grey[100],
+//               shape: BoxShape.circle,
+//             ),
+//             child: Icon(Icons.lock_outline, size: 40, color: Colors.grey[400]),
+//           ),
+//           const SizedBox(height: 16),
+//           Text(
+//             label,
+//             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+//           ),
+//           const SizedBox(height: 8),
+//           Text(
+//             'फक्त सुपर प्रशासकाला प्रवेश आहे.',
+//             style: TextStyle(color: Colors.grey[600], fontSize: 14),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 // ── Contact Tab ───────────────────────────────────────────────────────────────
 
@@ -803,9 +808,19 @@ class _ContactTab extends StatelessWidget {
                   ],
                 ),
                 const Divider(height: 20),
-                _ContactRow(icon: Icons.email_outlined, label: 'ईमेल', value: 'support@plantation.com'),
+                _ContactRow(
+                  icon: Icons.email_outlined,
+                  label: 'ईमेल',
+                  value: 'paras29091989@gmail.com',
+                  uri: Uri(scheme: 'mailto', path: 'paras29091989@gmail.com'),
+                ),
                 const SizedBox(height: 10),
-                _ContactRow(icon: Icons.phone_outlined, label: 'फोन', value: '+91-9004223393'),
+                _ContactRow(
+                  icon: Icons.phone_outlined,
+                  label: 'फोन',
+                  value: '+91-9004223393',
+                  uri: Uri(scheme: 'tel', path: '+919004223393'),
+                ),
               ],
             ),
           ),
@@ -819,22 +834,56 @@ class _ContactRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _ContactRow({required this.icon, required this.label, required this.value});
+  final Uri uri;
+  const _ContactRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.uri,
+  });
+
+  Future<void> _launch(BuildContext context) async {
+    final launched =
+        await canLaunchUrl(uri) && await launchUrl(uri);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('हे उघडता आले नाही')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.grey[600], size: 20),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _launch(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        child: Row(
           children: [
-            Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            Icon(icon, color: Colors.grey[600], size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2E7D32),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 18, color: Colors.grey[400]),
           ],
         ),
-      ],
+      ),
     );
   }
 }

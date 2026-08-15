@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -20,10 +21,24 @@ class _BroadcastPageState extends State<BroadcastPage> {
   List<String> _selectedPhones = [];
   List<Map<String, dynamic>> _allUsers = [];
   String _searchQuery = '';
+  Map<String, DateTime> _lastMessageTime = {};
+  StreamSubscription<QuerySnapshot>? _lastMessageSub;
 
   String _broadcastDocId() {
     final invertedMs = 9999999999999 - DateTime.now().millisecondsSinceEpoch;
     return invertedMs.toString();
+  }
+
+  DateTime? _broadcastDate(Map<String, dynamic> data) {
+    final millis = data['sentAtMillis'];
+    if (millis is int) {
+      return DateTime.fromMillisecondsSinceEpoch(millis);
+    }
+    final ts = data['sentAt'];
+    if (ts is Timestamp) {
+      return ts.toDate();
+    }
+    return null;
   }
 
   Future<List<Map<String, dynamic>>> _getLocalNotifications() async {
@@ -49,6 +64,7 @@ class _BroadcastPageState extends State<BroadcastPage> {
   void initState() {
     super.initState();
     _fetchAllUsers();
+    _listenLastMessageTimes();
     Future.microtask(() async {
       await FirebaseConfig.logEvent(
         eventType: 'broadcast_page_opened',
@@ -56,6 +72,37 @@ class _BroadcastPageState extends State<BroadcastPage> {
         userId: loggedInMobile,
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _lastMessageSub?.cancel();
+    super.dispose();
+  }
+
+  void _listenLastMessageTimes() {
+    if (loggedInMobile == null) return;
+    _lastMessageSub = FirebaseFirestore.instance
+        .collection('broadcasts')
+        .where('fromPhone', isEqualTo: loggedInMobile)
+        .snapshots()
+        .listen((snapshot) {
+          final Map<String, DateTime> latest = {};
+          for (final doc in snapshot.docs) {
+            final data = doc.data();
+            final phone = data['toPhone']?.toString();
+            final date = _broadcastDate(data);
+            if (phone == null || phone.isEmpty || date == null) {
+              continue;
+            }
+            final existing = latest[phone];
+            if (existing == null || date.isAfter(existing)) {
+              latest[phone] = date;
+            }
+          }
+          if (!mounted) return;
+          setState(() => _lastMessageTime = latest);
+        });
   }
 
   Future<void> _fetchAllUsers() async {
@@ -111,6 +158,7 @@ class _BroadcastPageState extends State<BroadcastPage> {
         'registrationToken': token,
         'status': token != null ? 'pending' : 'missing_token',
         'sentAt': FieldValue.serverTimestamp(),
+        'sentAtMillis': DateTime.now().millisecondsSinceEpoch,
       });
 
       if (token != null) {
@@ -194,16 +242,16 @@ class _BroadcastPageState extends State<BroadcastPage> {
                         }
                         final received = snapshot.data!.docs.toList()
                           ..sort((a, b) {
-                            final aTime =
-                                (a.data() as Map<String, dynamic>)['sentAt'];
-                            final bTime =
-                                (b.data() as Map<String, dynamic>)['sentAt'];
-                            final aDate = aTime is Timestamp
-                                ? aTime.toDate()
-                                : DateTime.fromMillisecondsSinceEpoch(0);
-                            final bDate = bTime is Timestamp
-                                ? bTime.toDate()
-                                : DateTime.fromMillisecondsSinceEpoch(0);
+                            final aDate =
+                                _broadcastDate(
+                                  a.data() as Map<String, dynamic>,
+                                ) ??
+                                DateTime.fromMillisecondsSinceEpoch(0);
+                            final bDate =
+                                _broadcastDate(
+                                  b.data() as Map<String, dynamic>,
+                                ) ??
+                                DateTime.fromMillisecondsSinceEpoch(0);
                             return bDate.compareTo(aDate);
                           });
                         return Container(
@@ -214,17 +262,14 @@ class _BroadcastPageState extends State<BroadcastPage> {
                             itemBuilder: (context, index) {
                               final doc = received[index];
                               final data = doc.data() as Map<String, dynamic>;
+                              final date = _broadcastDate(data);
                               return ListTile(
                                 title: Text(data['message'] ?? ''),
                                 subtitle: Text(
                                   'पासून: ${data['fromPhone'] ?? ''}',
                                 ),
                                 trailing: Text(
-                                  data['sentAt'] != null
-                                      ? (data['sentAt'] as Timestamp)
-                                            .toDate()
-                                            .toString()
-                                      : '',
+                                  date?.toString() ?? '',
                                   style: TextStyle(fontSize: 10),
                                 ),
                               );
@@ -270,16 +315,16 @@ class _BroadcastPageState extends State<BroadcastPage> {
                         }
                         final sent = snapshot.data!.docs.toList()
                           ..sort((a, b) {
-                            final aTime =
-                                (a.data() as Map<String, dynamic>)['sentAt'];
-                            final bTime =
-                                (b.data() as Map<String, dynamic>)['sentAt'];
-                            final aDate = aTime is Timestamp
-                                ? aTime.toDate()
-                                : DateTime.fromMillisecondsSinceEpoch(0);
-                            final bDate = bTime is Timestamp
-                                ? bTime.toDate()
-                                : DateTime.fromMillisecondsSinceEpoch(0);
+                            final aDate =
+                                _broadcastDate(
+                                  a.data() as Map<String, dynamic>,
+                                ) ??
+                                DateTime.fromMillisecondsSinceEpoch(0);
+                            final bDate =
+                                _broadcastDate(
+                                  b.data() as Map<String, dynamic>,
+                                ) ??
+                                DateTime.fromMillisecondsSinceEpoch(0);
                             return bDate.compareTo(aDate);
                           });
                         return Container(
@@ -290,15 +335,12 @@ class _BroadcastPageState extends State<BroadcastPage> {
                             itemBuilder: (context, index) {
                               final doc = sent[index];
                               final data = doc.data() as Map<String, dynamic>;
+                              final date = _broadcastDate(data);
                               return ListTile(
                                 title: Text(data['message'] ?? ''),
                                 subtitle: Text('कडे: ${data['phone'] ?? ''}'),
                                 trailing: Text(
-                                  data['sentAt'] != null
-                                      ? (data['sentAt'] as Timestamp)
-                                            .toDate()
-                                            .toString()
-                                      : '',
+                                  date?.toString() ?? '',
                                   style: TextStyle(fontSize: 10),
                                 ),
                               );
@@ -349,14 +391,24 @@ class _BroadcastPageState extends State<BroadcastPage> {
                   // Search box
                   Builder(
                     builder: (context) {
-                      final filtered = _allUsers.where((u) {
-                        if (_searchQuery.isEmpty) return true;
-                        final q = _searchQuery.toLowerCase();
-                        final name = (u['name'] ?? '').toString().toLowerCase();
-                        final mobile = (u['mobile'] ?? '').toString();
-                        return name.contains(q) ||
-                            mobile.contains(q);
-                      }).toList();
+                      final filtered =
+                          _allUsers.where((u) {
+                            if (_searchQuery.isEmpty) return true;
+                            final q = _searchQuery.toLowerCase();
+                            final name = (u['name'] ?? '')
+                                .toString()
+                                .toLowerCase();
+                            final mobile = (u['mobile'] ?? '').toString();
+                            return name.contains(q) || mobile.contains(q);
+                          }).toList()..sort((a, b) {
+                            final aTime =
+                                _lastMessageTime[a['mobile']?.toString()] ??
+                                DateTime.fromMillisecondsSinceEpoch(0);
+                            final bTime =
+                                _lastMessageTime[b['mobile']?.toString()] ??
+                                DateTime.fromMillisecondsSinceEpoch(0);
+                            return bTime.compareTo(aTime);
+                          });
 
                       final allFilteredSelected =
                           filtered.isNotEmpty &&
@@ -447,8 +499,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
                                       final u = filtered[index];
                                       final mobile =
                                           u['mobile']?.toString() ?? '';
-                                      final name =
-                                          (u['name'] ?? '').toString().trim();
+                                      final name = (u['name'] ?? '')
+                                          .toString()
+                                          .trim();
                                       final isSelected = _selectedPhones
                                           .contains(mobile);
                                       return CheckboxListTile(
@@ -498,8 +551,9 @@ class _BroadcastPageState extends State<BroadcastPage> {
                                   (u) => u['mobile'] == phone,
                                   orElse: () => {},
                                 );
-                                final name =
-                                    (user['name'] ?? '').toString().trim();
+                                final name = (user['name'] ?? '')
+                                    .toString()
+                                    .trim();
                                 return Chip(
                                   label: Text(
                                     name.isEmpty ? phone : name,

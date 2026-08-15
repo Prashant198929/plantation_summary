@@ -13,6 +13,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'plant_type_service.dart';
 import 'plant_search_field.dart';
 import 'mobile_encryption_service.dart';
+import 'attendance_support.dart';
 
 String _dateKey(DateTime dt) {
   return '${dt.year.toString().padLeft(4, '0')}${dt.month.toString().padLeft(2, '0')}${dt.day.toString().padLeft(2, '0')}';
@@ -449,7 +450,14 @@ class _ZoneManagementPageState extends State<ZoneManagementPage> {
           final data =
               userSnapshot.data!.docs.first.data() as Map<String, dynamic>;
           userRole = data['role']?.toString().toLowerCase();
-          userZone = data['zone'];
+          // 'zones' collection docs are named/keyed in Marathi (e.g. "झोन 7"),
+          // but a user's own 'zone' field is often stored in English ("Zone 7")
+          // with 'zone_mr' left blank — normalize here or the exact-match
+          // query below silently returns nothing for those accounts.
+          final rawZone = (data['zone_mr'] as String?)?.trim().isNotEmpty == true
+              ? data['zone_mr'] as String
+              : (data['zone'] ?? '').toString();
+          userZone = AttendanceSupport.toMarathiZoneLabel(rawZone);
         }
         final isSuperAdmin = userRole == 'super_admin' || userRole == 'superadmin';
         final isAdmin = userRole == 'admin';
@@ -564,8 +572,10 @@ class _ZoneListWidget extends StatelessWidget {
         final zones = allZones.where((zone) {
           final zoneName = (zone['name'] ?? '').toString().toLowerCase();
           return searchQuery.isEmpty || zoneName.contains(searchQuery);
-        }).toList();
-        
+        }).toList()
+          ..sort((a, b) => AttendanceSupport.compareZoneNames(
+              (a['name'] ?? '').toString(), (b['name'] ?? '').toString()));
+
         if (zones.isEmpty && searchQuery.isNotEmpty) {
           return Center(
             child: Text('No zones found matching "$searchQuery"'),
@@ -935,7 +945,10 @@ class _PlantListPageState extends State<PlantListPage> {
                         if (!zoneSnapshot.hasData) {
                           return CircularProgressIndicator();
                         }
-                        final zones = zoneSnapshot.data!.docs;
+                        final zones = zoneSnapshot.data!.docs.toList()
+                          ..sort((a, b) => AttendanceSupport.compareZoneNames(
+                              (a['name'] ?? '').toString(),
+                              (b['name'] ?? '').toString()));
                         return DropdownButtonFormField<String>(
                           value: plantData['zoneId'],
                           decoration: InputDecoration(
@@ -1656,6 +1669,23 @@ class _PlantListPageState extends State<PlantListPage> {
                     }
 
                     try {
+                      // Defensive auto-heal: this dialog is only reached
+                      // from an existing zone card, but if that zone doc
+                      // was deleted/renamed after this page loaded (or the
+                      // id is otherwise stale), recreate it rather than let
+                      // the new plant point at a missing zone — mirrors
+                      // register_page.dart's auto-create-if-missing zone.
+                      final zoneDoc = await FirebaseFirestore.instance
+                          .collection('zones')
+                          .doc(widget.zoneId)
+                          .get();
+                      if (!zoneDoc.exists) {
+                        await FirebaseFirestore.instance
+                            .collection('zones')
+                            .doc(widget.zoneId)
+                            .set({'name': widget.zoneName});
+                      }
+
                       await FirebaseFirestore.instance
                           .collection('plantation_records')
                           .doc(docId)

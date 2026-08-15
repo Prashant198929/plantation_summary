@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:excel/excel.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'excel_download_helper.dart';
 import 'firebase_config.dart';
+import 'attendance_support.dart';
 
 class ReportPage extends StatelessWidget {
   const ReportPage({Key? key}) : super(key: key);
@@ -26,7 +29,7 @@ class ReportPage extends StatelessWidget {
           _ReportCard(
             icon: Icons.map_outlined,
             title: 'झोन नुसार अहवाल',
-            description: 'एक किंवा अधिक झोन निवडा आणि Excel अहवाल डाउनलोड करा.',
+            description: 'एक किंवा अधिक झोन निवडा आणि Excel अहवाल शेअर करा.',
             onTap: () async {
               await FirebaseConfig.logEvent(
                 eventType: 'zone_wise_report_clicked',
@@ -42,12 +45,14 @@ class ReportPage extends StatelessWidget {
           _ReportCard(
             icon: Icons.forest_outlined,
             title: 'सर्व रोपांचा अहवाल',
-            description: 'संपूर्ण लागवड नोंदी व इतिहासासह Excel अहवाल डाउनलोड करा.',
+            description: 'संपूर्ण लागवड नोंदी व इतिहासासह Excel अहवाल शेअर करा.',
             onTap: () async {
               await FirebaseConfig.logEvent(
                 eventType: 'all_plants_report_clicked',
                 description: 'All plants report clicked',
               );
+              final download = await askShareOrDownload(context);
+              if (download == null || !context.mounted) return;
               // Show loading indicator
               showDialog(
                 context: context,
@@ -66,10 +71,11 @@ class ReportPage extends StatelessWidget {
                 final plants = await _fetchPlantsWithHistory();
                 if (context.mounted) Navigator.of(context).pop();
                 if (context.mounted) {
-                  await _generateAndSaveExcel(
+                  await _generateAndShareExcel(
                     plants,
                     context,
                     fileName: 'all_plants_report.xlsx',
+                    download: download,
                   );
                 }
               } catch (_) {
@@ -181,7 +187,8 @@ class _ZoneSelectionDialogState extends State<_ZoneSelectionDialog> {
     final query = await FirebaseFirestore.instance.collection('zones').get();
     if (!mounted) return;
     setState(() {
-      _zones = query.docs.map((doc) => doc['name'] as String).toList()..sort();
+      _zones = query.docs.map((doc) => doc['name'] as String).toList()
+        ..sort(AttendanceSupport.compareZoneNames);
     });
   }
 
@@ -368,13 +375,20 @@ class _ZoneSelectionDialogState extends State<_ZoneSelectionDialog> {
                     );
                     return;
                   }
+                  final download = await askShareOrDownload(context);
+                  if (download == null || !context.mounted) return;
                   setState(() => _generating = true);
                   try {
                     final plants = await _fetchPlantsWithHistory(
                       zones: _selectedZones.toList(),
                     );
                     if (context.mounted) {
-                      await _generateAndSaveExcel(plants, context);
+                      await _generateAndShareExcel(
+                        plants,
+                        context,
+                        zones: _selectedZones.toList(),
+                        download: download,
+                      );
                     }
                     await FirebaseConfig.logEvent(
                       eventType: 'report_generated',
@@ -451,22 +465,66 @@ Future<List<Map<String, dynamic>>> _fetchPlantsWithHistory({
   return plants;
 }
 
-Future<void> _generateAndSaveExcel(List<Map<String, dynamic>> plants, BuildContext context, {String fileName = 'zone_report.xlsx'}) async {
+Future<void> _generateAndShareExcel(
+  List<Map<String, dynamic>> plants,
+  BuildContext context, {
+  String fileName = 'zone_report.xlsx',
+  List<String>? zones,
+  bool download = false,
+}) async {
   try {
     final excel = Excel.createExcel();
     final sheet = excel['Plants'];
-    sheet.appendRow([
-      TextCellValue('नाव'),
-      TextCellValue('झोन'),
-      TextCellValue('वनस्पती क्रमांक'),
-      TextCellValue('आरोग्य स्थिती'),
-      TextCellValue('उंची'),
-      TextCellValue('बायोमास'),
-      TextCellValue('विशिष्ट पान क्षेत्र'),
-      TextCellValue('दीर्घायुष्य'),
-      TextCellValue('पानांच्या कचऱ्याची गुणवत्ता'),
-      TextCellValue('बदल ध्वज'),
-    ]);
+    const _cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    final now = DateTime.now();
+
+    // Row 1: || श्री || — centered across all columns
+    sheet.merge(CellIndex.indexByString('A1'), CellIndex.indexByString('J1'));
+    final c1 = sheet.cell(CellIndex.indexByString('A1'));
+    c1.value = TextCellValue('|| श्री ||');
+    c1.cellStyle = CellStyle(horizontalAlign: HorizontalAlign.Center);
+
+    // Row 2: || श्री राम समर्थ || — centered
+    sheet.merge(CellIndex.indexByString('A2'), CellIndex.indexByString('J2'));
+    final c2 = sheet.cell(CellIndex.indexByString('A2'));
+    c2.value = TextCellValue('|| श्री राम समर्थ ||');
+    c2.cellStyle = CellStyle(horizontalAlign: HorizontalAlign.Center);
+
+    // Row 3: empty (spacer)
+
+    // Row 4: Zone(s) — centered across all columns
+    sheet.merge(CellIndex.indexByString('A4'), CellIndex.indexByString('J4'));
+    final zoneCell = sheet.cell(CellIndex.indexByString('A4'));
+    zoneCell.value = TextCellValue('झोन: ${(zones != null && zones.isNotEmpty) ? zones.join(', ') : 'सर्व'}');
+    zoneCell.cellStyle = CellStyle(horizontalAlign: HorizontalAlign.Center);
+
+    // Row 5: Date — right-aligned across all columns
+    sheet.merge(CellIndex.indexByString('A5'), CellIndex.indexByString('J5'));
+    final dateCell = sheet.cell(CellIndex.indexByString('A5'));
+    dateCell.value = TextCellValue('दि. ${now.day}/${now.month}/${now.year}');
+    dateCell.cellStyle = CellStyle(horizontalAlign: HorizontalAlign.Right);
+
+    // Row 6: empty (spacer)
+
+    // Row 7: Column headers — written directly (not via appendRow, which
+    // targets maxRows and would collide with the row 6 spacer left blank above)
+    const _hdrs = [
+      'नाव',
+      'झोन',
+      'वनस्पती क्रमांक',
+      'आरोग्य स्थिती',
+      'उंची',
+      'बायोमास',
+      'विशिष्ट पान क्षेत्र',
+      'दीर्घायुष्य',
+      'पानांच्या कचऱ्याची गुणवत्ता',
+      'बदल ध्वज',
+    ];
+    for (int i = 0; i < _hdrs.length; i++) {
+      final hc = sheet.cell(CellIndex.indexByString('${_cols[i]}7'));
+      hc.value = TextCellValue(_hdrs[i]);
+      hc.cellStyle = CellStyle(bold: true);
+    }
     for (final plant in plants) {
       sheet.appendRow([
         TextCellValue(plant['plantName']?.toString() ?? ''),
@@ -481,20 +539,30 @@ Future<void> _generateAndSaveExcel(List<Map<String, dynamic>> plants, BuildConte
         TextCellValue(plant['_reportFlag']?.toString() ?? ''),
       ]);
     }
+    final bytes = excel.encode()!;
+
+    if (!context.mounted) return;
+
+    if (download) {
+      await downloadExcelFile(
+        context: context,
+        bytes: Uint8List.fromList(bytes),
+        fileName: fileName,
+      );
+      return;
+    }
+
     final tempDir = await getTemporaryDirectory();
     final tempFile = File('${tempDir.path}/$fileName');
-    await tempFile.writeAsBytes(excel.encode()!);
-
-    if (context.mounted) {
-      await Share.shareXFiles(
-        [XFile(tempFile.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
-        subject: fileName,
-      );
-    }
+    await tempFile.writeAsBytes(bytes);
+    await Share.shareXFiles(
+      [XFile(tempFile.path, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')],
+      subject: fileName,
+    );
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Excel जतन करण्यात अयशस्वी: $e')),
+        SnackBar(content: Text('Excel शेअर करण्यात अयशस्वी: $e')),
       );
     }
   }

@@ -7,6 +7,7 @@ import 'mobile_encryption_service.dart';
 import 'place_name_service.dart';
 import 'transliteration_service.dart';
 import 'user_id_service.dart';
+import 'attendance_support.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -16,18 +17,10 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  static const String _customZoneValue = '__custom__';
-
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nameMrController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _baithakNoController = TextEditingController();
-  final TextEditingController _baithakPlaceController = TextEditingController();
-  final TextEditingController _baithakMrController = TextEditingController();
-  final TextEditingController _zoneMrController = TextEditingController();
-  final TextEditingController _hallController = TextEditingController();
-  final TextEditingController _hallMrController = TextEditingController();
-  final TextEditingController _zoneController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
@@ -35,32 +28,38 @@ class _RegisterPageState extends State<RegisterPage> {
   // Tracks whether the user has manually edited an auto-filled Marathi
   // field, so we stop overwriting it as they keep typing the English side.
   bool _nameMrTouched = false;
-  bool _baithakMrTouched = false;
-  bool _hallMrTouched = false;
-  bool _zoneMrTouched = false;
 
   String? _selectedGender;
-  String? _selectedBaithakDay;
+  // Defaults to पटावर (the common case) so registering doesn't need an
+  // extra tap for this field.
+  String? _selectedBaithakNoType = _baithakNoTypes.first;
 
-  static const Map<String, String> _baithakDayMr = {
-    'Monday': 'सोमवार',
-    'Tuesday': 'मंगळवार',
-    'Wednesday': 'बुधवार',
-    'Thursday': 'गुरुवार',
-    'Friday': 'शुक्रवार',
-    'Saturday': 'शनिवार',
-    'Sunday': 'रविवार',
-  };
+  // बैठक क्रमांक is split into a पटावर/पटाबाहेर type plus the number itself,
+  // then combined at submit time into e.g. "पटावर 104" — mirrors the same
+  // split in attendance_page.dart's _AddUserBottomSheet.
+  static const List<String> _baithakNoTypes = ['पटावर', 'पटाबाहेर'];
 
-  final List<String> _zones = [];
-  String? _selectedZoneChoice;
+  // The merged बैठक ठिकाण dropdown picks one BaithakSessions doc (keyed by
+  // its Session_mr), filling baithakPlace/baithak_mr/baithak_day/
+  // baithak_day_mr and deriving zone/zone_mr together — mirrors
+  // user_role_management_page.dart's Add User dialog, so zone is no longer
+  // entered separately.
+  String? _selectedSessionMr;
+  String? _selectedHallEn;
+  String? _selectedHallMr;
+  String? _selectedDayEn;
+  String? _selectedDayMr;
+  String? _selectedZone;
+  String? _selectedZoneMr;
+  List<Map<String, String>> _baithakSessionOptions = [];
+  FirebaseFirestore? _secondaryFirestore;
 
   Map<String, String> _errors = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchZones();
+    _fetchBaithakSessionOptions();
     PlaceNameService.fetchAll();
     Future.microtask(() async {
       await FirebaseConfig.logEvent(
@@ -77,61 +76,46 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => mrCtrl.text = TransliterationService.toDevanagari(english));
   }
 
-  void _autoFillPlace(TextEditingController mrCtrl, bool touched, String english) {
-    if (touched) return;
-    setState(() => mrCtrl.text = PlaceNameService.suggest(english));
-  }
-
-  Future<void> _fetchZones() async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('zones')
-        .orderBy('name', descending: false)
-        .get();
-    final zones = snapshot.docs
-        .map((doc) => doc['name']?.toString() ?? '')
-        .where((name) => name.isNotEmpty)
-        .toList();
+  Future<void> _fetchBaithakSessionOptions() async {
+    final secondaryApp = await AttendanceSupport.initializeSecondaryApp(
+      _secondaryFirestore,
+    );
+    final firestore = secondaryApp != null
+        ? FirebaseFirestore.instanceFor(app: secondaryApp)
+        : _secondaryFirestore;
+    if (firestore == null) return;
+    final options = await AttendanceSupport.fetchBaithakSessionOptions(firestore);
+    if (!mounted) return;
     setState(() {
-      _zones
-        ..clear()
-        ..addAll(zones);
-      if (_zones.isNotEmpty && _selectedZoneChoice == null) {
-        _selectedZoneChoice = _zones.first;
-        _zoneController.text = _selectedZoneChoice!;
-      }
+      _secondaryFirestore = firestore;
+      _baithakSessionOptions = options;
     });
   }
 
-  String _normalizeZoneInput(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return trimmed;
-    if (trimmed.toLowerCase().startsWith('zone') || trimmed.startsWith('झोन')) {
-      return trimmed;
-    }
-    return 'Zone $trimmed';
-  }
-
-  String _autoZoneMr(String zone) {
-    if (zone.startsWith('झोन')) return zone;
-    final digits = RegExp(r'(\d+)').firstMatch(zone)?.group(1) ?? '';
-    return digits.isNotEmpty ? 'झोन $digits' : '';
-  }
-
-  void _autoFillZoneMr(String zone) {
-    if (_zoneMrTouched) return;
-    setState(() => _zoneMrController.text = _autoZoneMr(zone));
+  void _onBaithakSessionChanged(String? sessionMr) {
+    setState(() {
+      _selectedSessionMr = sessionMr;
+      final session = _baithakSessionOptions.firstWhere(
+        (o) => o['sessionMr'] == sessionMr,
+        orElse: () => const {},
+      );
+      _selectedHallEn = session['hallEn'] ?? '';
+      _selectedHallMr = session['hallMr'] ?? '';
+      _selectedDayEn = session['dayEn'] ?? '';
+      _selectedDayMr = session['dayMr'] ?? '';
+      _selectedZone = session['zone'] ?? '';
+      _selectedZoneMr = session['zoneMr'] ?? '';
+      _errors.remove('baithakPlace');
+    });
   }
 
   bool _validateName(String value) =>
       RegExp(r'^[A-Za-zऀ-ॿ ]+$').hasMatch(value.trim());
   bool _validateMobile(String value) =>
       RegExp(r'^[0-9]{10}$').hasMatch(value.replaceAll(RegExp(r'\D'), ''));
-  bool _validateBaithakNo(String value) => value.trim().isNotEmpty;
+  bool _validateBaithakNo(String type, String number) =>
+      type.trim().isNotEmpty && RegExp(r'^[0-9]+$').hasMatch(number.trim());
   bool _validateBaithakPlace(String value) => value.trim().isNotEmpty;
-  bool _validateZone(String value) {
-    final numeric = RegExp(r'(\d+)$').firstMatch(value.trim());
-    return numeric != null;
-  }
   bool _validateEmail(String value) =>
       RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim());
   bool _validatePassword(String value) =>
@@ -142,19 +126,17 @@ class _RegisterPageState extends State<RegisterPage> {
     String name = _nameController.text.trim();
     String nameMr = _nameMrController.text.trim();
     String mobile = _mobileController.text.replaceAll(RegExp(r'\D'), '');
-    String baithakNo = _baithakNoController.text.trim();
-    String baithakPlace = _baithakPlaceController.text.trim();
-    String baithakMr = _baithakMrController.text.trim();
-    String baithakDay = _selectedBaithakDay ?? '';
-    String baithakDayMr = _baithakDayMr[baithakDay] ?? '';
-    String zoneMr = _zoneMrController.text.trim();
-    String hall = _hallController.text.trim();
-    String hallMr = _hallMrController.text.trim();
-    final chosenZone = _selectedZoneChoice == _customZoneValue
-        ? _zoneController.text
-        : _selectedZoneChoice ?? _zoneController.text;
-    String zone = _normalizeZoneInput(chosenZone);
-    _zoneController.text = zone;
+    String baithakNoType = _selectedBaithakNoType ?? '';
+    String baithakNoValue = _baithakNoController.text.trim();
+    String baithakNo = baithakNoType.isNotEmpty && baithakNoValue.isNotEmpty
+        ? '$baithakNoType $baithakNoValue'
+        : '';
+    String baithakPlace = _selectedHallEn ?? '';
+    String baithakMr = _selectedHallMr ?? '';
+    String baithakDay = _selectedDayEn ?? '';
+    String baithakDayMr = _selectedDayMr ?? '';
+    String zone = _selectedZone ?? '';
+    String zoneMr = _selectedZoneMr ?? '';
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
     String dob = _dobController.text.trim();
@@ -168,14 +150,11 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_validateMobile(mobile)) {
       errors['mobile'] = 'मोबाइल नंबर १० अंकी असावा';
     }
-    if (!_validateBaithakNo(baithakNo)) {
-      errors['baithakNo'] = 'बैठक क्रमांक आवश्यक आहे';
+    if (!_validateBaithakNo(baithakNoType, baithakNoValue)) {
+      errors['baithakNo'] = 'बैठक क्रमांक प्रकार व क्रमांक दोन्ही आवश्यक आहेत';
     }
     if (!_validateBaithakPlace(baithakPlace)) {
       errors['baithakPlace'] = 'बैठक ठिकाण आवश्यक आहे';
-    }
-    if (!_validateZone(zone)) {
-      errors['zone'] = 'झोन अंकी असावा';
     }
     if (!_validateEmail(email)) {
       errors['email'] = 'वैध ईमेल पत्ता प्रविष्ट करा';
@@ -212,7 +191,27 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    // Mobile is unique — now create Firebase Auth account
+    // Check duplicate email — a stale/leftover Firestore doc with this email
+    // would otherwise only surface as a confusing raw error from Firebase Auth.
+    final emailQuery = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .get();
+
+    if (emailQuery.docs.isNotEmpty) {
+      setState(() {
+        _errors['email'] = 'हा ईमेल आधीच नोंदणीकृत आहे';
+      });
+      await FirebaseFirestore.instance.collection('vrukshamojaniattendancelogs').add({
+        'email': email,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'failed',
+        'reason': 'हा ईमेल आधीच नोंदणीकृत आहे',
+      });
+      return;
+    }
+
+    // Mobile and email are unique — now create Firebase Auth account
     String? authUid;
     try {
       final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -231,21 +230,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     try {
-      final zoneSnapshot = await FirebaseFirestore.instance
-          .collection('zones')
-          .where('name', isEqualTo: zone)
-          .limit(1)
-          .get();
-      if (zoneSnapshot.docs.isEmpty) {
-        await FirebaseFirestore.instance
-            .collection('zones')
-            .doc(zone)
-            .set({'name': zone});
-        setState(() {
-          _zones.add(zone);
-        });
-      }
-
       final invertedMs = 9999999999999 - DateTime.now().millisecondsSinceEpoch;
       String? fcmToken = await FirebaseMessaging.instance.getToken();
       // 'uid' is a clean sequential display ID (for reports/attendance);
@@ -257,21 +241,19 @@ class _RegisterPageState extends State<RegisterPage> {
         'name': name,
         'name_mr': nameMr,
         'mobile': encryptedMobile,
-        'baithakNo': baithakNo,
+        'hajeri_kramank': baithakNo,
         'baithakPlace': baithakPlace,
         'baithak_mr': baithakMr,
         'baithak_day': baithakDay,
         'baithak_day_mr': baithakDayMr,
         'zone': zone,
         'zone_mr': zoneMr,
-        'hall': hall,
-        'hall_mr': hallMr,
         'gender': gender,
         'isActive': true,
         'dob': dob,
         'email': email,
         'fcmToken': fcmToken,
-        'role': 'user',
+        'role': 'Shree Sadasya',
         'attendance_viewer': false,
         'createdAt': FieldValue.serverTimestamp(),
         'uid': sequentialUid,
@@ -279,9 +261,8 @@ class _RegisterPageState extends State<RegisterPage> {
       });
 
       // Grow the place dictionary so future auto-fill for this Baithak
-      // Place / Hall is an exact lookup instead of a phonetic guess.
+      // Place is an exact lookup instead of a phonetic guess.
       await PlaceNameService.learn(baithakPlace, baithakMr);
-      await PlaceNameService.learn(hall, hallMr);
 
       await FirebaseFirestore.instance.collection('vrukshamojaniattendancelogs').add({
         'mobile': mobile,
@@ -309,21 +290,20 @@ class _RegisterPageState extends State<RegisterPage> {
       _nameMrController.clear();
       _mobileController.clear();
       _baithakNoController.clear();
-      _baithakPlaceController.clear();
-      _baithakMrController.clear();
-      _zoneMrController.clear();
-      _hallController.clear();
-      _hallMrController.clear();
-      _zoneController.clear();
       _emailController.clear();
       _passwordController.clear();
       _dobController.clear();
       setState(() {
         _selectedGender = null;
-        _selectedBaithakDay = null;
+        _selectedBaithakNoType = _baithakNoTypes.first;
+        _selectedSessionMr = null;
+        _selectedHallEn = null;
+        _selectedHallMr = null;
+        _selectedDayEn = null;
+        _selectedDayMr = null;
+        _selectedZone = null;
+        _selectedZoneMr = null;
         _nameMrTouched = false;
-        _baithakMrTouched = false;
-        _hallMrTouched = false;
       });
       Navigator.pop(context);
     } catch (e) {
@@ -401,18 +381,37 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Text(_errors['mobile']!, style: TextStyle(color: Colors.red)),
                 ),
               SizedBox(height: 12),
-              TextField(
-                controller: _baithakNoController,
-                decoration: InputDecoration(labelText: 'बैठक क्रमांक'),
-                onChanged: (val) {
-                  setState(() {
-                    if (val.trim().isEmpty) {
-                      _errors['baithakNo'] = 'बैठक क्रमांक आवश्यक आहे';
-                    } else {
-                      _errors.remove('baithakNo');
-                    }
-                  });
-                },
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedBaithakNoType,
+                      isExpanded: true,
+                      decoration: InputDecoration(labelText: 'बैठक क्रमांक प्रकार'),
+                      items: _baithakNoTypes
+                          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                          .toList(),
+                      onChanged: (val) {
+                        setState(() {
+                          _selectedBaithakNoType = val;
+                          _errors.remove('baithakNo');
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _baithakNoController,
+                      decoration: InputDecoration(labelText: 'क्रमांक'),
+                      keyboardType: TextInputType.number,
+                      onChanged: (val) {
+                        setState(() => _errors.remove('baithakNo'));
+                      },
+                    ),
+                  ),
+                ],
               ),
               if (_errors['baithakNo'] != null)
                 Padding(
@@ -420,48 +419,48 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Text(_errors['baithakNo']!, style: TextStyle(color: Colors.red)),
                 ),
               SizedBox(height: 12),
-              TextField(
-                controller: _baithakPlaceController,
-                decoration: InputDecoration(labelText: 'बैठक ठिकाण (Baithak Place)'),
-                onChanged: (val) {
-                  setState(() {
-                    if (val.trim().isEmpty) {
-                      _errors['baithakPlace'] = 'बैठक ठिकाण आवश्यक आहे';
-                    } else {
-                      _errors.remove('baithakPlace');
-                    }
-                  });
-                  _autoFillPlace(_baithakMrController, _baithakMrTouched, val);
-                },
-              ),
-              if (_errors['baithakPlace'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(_errors['baithakPlace']!, style: TextStyle(color: Colors.red)),
-                ),
-              SizedBox(height: 12),
-              TextField(
-                controller: _baithakMrController,
-                decoration: InputDecoration(labelText: 'बैठक ठिकाण मराठी (Baithak Place in Marathi)'),
-                onChanged: (_) => _baithakMrTouched = true,
-              ),
-              SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _selectedBaithakDay,
-                decoration: InputDecoration(labelText: 'बैठकीचा वार (Baithak Day)'),
-                items: _baithakDayMr.entries.map((e) =>
-                  DropdownMenuItem(value: e.key, child: Text('${e.key} - ${e.value}')),
-                ).toList(),
-                onChanged: (val) => setState(() => _selectedBaithakDay = val),
+                value: _selectedSessionMr,
+                isExpanded: true,
+                menuMaxHeight: 300,
+                decoration: InputDecoration(
+                  labelText: 'बैठक ठिकाण',
+                  errorText: _errors['baithakPlace'],
+                ),
+                items: _baithakSessionOptions
+                    .map(
+                      (o) => DropdownMenuItem(
+                        value: o['sessionMr'],
+                        child: Text(
+                          o['label'] ?? '',
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                selectedItemBuilder: (context) => _baithakSessionOptions
+                    .map(
+                      (o) => Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          o['label'] ?? '',
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: _onBaithakSessionChanged,
               ),
               SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _selectedGender,
                 decoration: InputDecoration(labelText: 'लिंग (Gender)'),
                 items: const [
-                  DropdownMenuItem(value: 'Male', child: Text('Male - पुरुष')),
-                  DropdownMenuItem(value: 'Female', child: Text('Female - स्त्री')),
-                  DropdownMenuItem(value: 'Other', child: Text('Other - इतर')),
+                  DropdownMenuItem(value: 'M', child: Text('M')),
+                  DropdownMenuItem(value: 'F', child: Text('F')),
+                  DropdownMenuItem(value: 'Others', child: Text('Others')),
                 ],
                 onChanged: (val) => setState(() => _selectedGender = val),
               ),
@@ -470,7 +469,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: _dobController,
                 readOnly: true,
                 decoration: InputDecoration(
-                  labelText: 'जन्मतारीख (DOB)',
+                  labelText: 'जन्मतारीख (YYYY-MM-DD)',
                   suffixIcon: Icon(Icons.calendar_today),
                 ),
                 onTap: () async {
@@ -487,93 +486,6 @@ class _RegisterPageState extends State<RegisterPage> {
                     });
                   }
                 },
-              ),
-              SizedBox(height: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: _selectedZoneChoice,
-                    decoration: InputDecoration(labelText: 'झोन'),
-                    items: [
-                      ..._zones.map(
-                        (zone) => DropdownMenuItem(
-                          value: zone,
-                          child: Text(zone),
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: _customZoneValue,
-                        child: Text('इतर'),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedZoneChoice = val;
-                        if (val != null && val != _customZoneValue) {
-                          _zoneController.text = val;
-                          if (!_validateZone(val)) {
-                            _errors['zone'] = 'झोन अंकी असावा';
-                          } else {
-                            _errors.remove('zone');
-                          }
-                          _autoFillZoneMr(val);
-                        }
-                      });
-                    },
-                  ),
-                  if (_selectedZoneChoice == _customZoneValue)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: TextField(
-                        controller: _zoneController,
-                        decoration: InputDecoration(
-                          labelText: 'कस्टम झोन',
-                        ),
-                        onChanged: (val) {
-                          final normalized = _normalizeZoneInput(val);
-                          setState(() {
-                            _zoneController.text = normalized;
-                            _zoneController.selection =
-                                TextSelection.fromPosition(
-                              TextPosition(
-                                offset: _zoneController.text.length,
-                              ),
-                            );
-                            if (!_validateZone(normalized)) {
-                              _errors['zone'] = 'झोन अंकी असावा';
-                            } else {
-                              _errors.remove('zone');
-                            }
-                          });
-                          _autoFillZoneMr(normalized);
-                        },
-                      ),
-                    ),
-                ],
-              ),
-              if (_errors['zone'] != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(_errors['zone']!, style: TextStyle(color: Colors.red)),
-                ),
-              SizedBox(height: 12),
-              TextField(
-                controller: _zoneMrController,
-                decoration: InputDecoration(labelText: 'झोन मराठी (Zone in Marathi)'),
-                onChanged: (_) => _zoneMrTouched = true,
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: _hallController,
-                decoration: InputDecoration(labelText: 'हॉल (Hall)'),
-                onChanged: (val) => _autoFillPlace(_hallMrController, _hallMrTouched, val),
-              ),
-              SizedBox(height: 12),
-              TextField(
-                controller: _hallMrController,
-                decoration: InputDecoration(labelText: 'हॉल मराठी (Hall in Marathi)'),
-                onChanged: (_) => _hallMrTouched = true,
               ),
               SizedBox(height: 12),
               TextField(

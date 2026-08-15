@@ -12,6 +12,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'plant_type_service.dart';
 import 'plant_search_field.dart';
 import 'mobile_encryption_service.dart';
+import 'attendance_support.dart';
 
 String _safeUploadUserId(String plantName, String plantNumber, String zoneName) {
   final raw = '${plantName}_${plantNumber}_${zoneName}';
@@ -316,15 +317,34 @@ class _PlantationListPageState extends State<PlantationListPage> {
                 return ValueListenableBuilder<String>(
                   valueListenable: _searchQuery,
                   builder: (context, searchQuery, _) {
-                    final plants = searchQuery.isEmpty
-                        ? allPlants
-                        : allPlants.where((p) {
-                            final d = p.data() as Map<String, dynamic>;
-                            final q = searchQuery.toLowerCase();
-                            return (d['plantName'] ?? '').toString().toLowerCase().contains(q) ||
-                                (d['plantNumber'] ?? '').toString().toLowerCase().contains(q) ||
-                                (d['zoneName'] ?? '').toString().toLowerCase().contains(q);
-                          }).toList();
+                    final plants = (searchQuery.isEmpty
+                            ? allPlants
+                            : allPlants.where((p) {
+                                final d = p.data() as Map<String, dynamic>;
+                                final q = searchQuery.toLowerCase();
+                                return (d['plantName'] ?? '').toString().toLowerCase().contains(q) ||
+                                    (d['plantNumber'] ?? '').toString().toLowerCase().contains(q) ||
+                                    (d['zoneName'] ?? '').toString().toLowerCase().contains(q);
+                              }).toList())
+                        .toList()
+                      // The 'All Records' list spans every zone, and Firestore's
+                      // default (unsorted) order falls back to lexicographic doc
+                      // ID (zoneNumber_plantNumber) — sort by zone number, then
+                      // plant number, so it reads in a sane ascending order.
+                      ..sort((a, b) {
+                        final da = a.data() as Map<String, dynamic>;
+                        final db = b.data() as Map<String, dynamic>;
+                        final zoneCompare = AttendanceSupport.compareZoneNames(
+                          (da['zoneName'] ?? '').toString(),
+                          (db['zoneName'] ?? '').toString(),
+                        );
+                        return zoneCompare != 0
+                            ? zoneCompare
+                            : AttendanceSupport.compareZoneNames(
+                                (da['plantNumber'] ?? '').toString(),
+                                (db['plantNumber'] ?? '').toString(),
+                              );
+                      });
                     return Column(
                   children: [
                     Padding(
@@ -582,6 +602,7 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                               ],
                                             ),
                                           ),
+                                          if (isSuperAdmin)
                                           IconButton(
                                             icon: const Icon(Icons.edit_outlined),
                                             color: const Color(0xFF2E7D32),
@@ -596,15 +617,6 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                   'zone': plantData['zoneName'],
                                                 },
                                               );
-                                              if (!isSuperAdmin) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('फक्त सुपर अॅडमिन संपादित करू शकतो'),
-                                                    backgroundColor: Colors.red,
-                                                  ),
-                                                );
-                                                return;
-                                              }
                                               final docId = plant.id;
                                               final plantTypes = await PlantTypeService.fetchAll();
                                               PlantType? selectedPlant = PlantTypeService.resolveFromCache(plantData['plantName'] ?? '');
@@ -702,7 +714,10 @@ class _PlantationListPageState extends State<PlantationListPage> {
                                                                   if (!zoneSnapshot.hasData) {
                                                                     return CircularProgressIndicator();
                                                                   }
-                                                                  final zones = zoneSnapshot.data!.docs;
+                                                                  final zones = zoneSnapshot.data!.docs.toList()
+                                                                    ..sort((a, b) => AttendanceSupport.compareZoneNames(
+                                                                        (a['name'] ?? '').toString(),
+                                                                        (b['name'] ?? '').toString()));
                                                                   return DropdownButtonFormField<String>(
                                                                     value: selectedZoneId,
                                                                     decoration: InputDecoration(
