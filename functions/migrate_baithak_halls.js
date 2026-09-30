@@ -1,0 +1,98 @@
+/**
+ * One-time load of sevakdb.dbo.BaithakHallMaster (HallName_en, HallName_mr)
+ * into the hajeri-465b7 Firebase project as a new 'BaithakHalls' collection.
+ *
+ * Source query run against the sqlserver Docker container:
+ *   SELECT HallName_en, HallName_mr FROM sevakdb.dbo.BaithakHallMaster;
+ * (30 rows, verified via COUNT(*) against the same table.)
+ *
+ * Usage (from functions/ directory):
+ *   node migrate_baithak_halls.js            # dry run, prints what would be written
+ *   node migrate_baithak_halls.js --commit   # writes to Firestore
+ *
+ * Doc ID = HallName_mr (so a hall can be looked up directly by its Marathi
+ * name without a query). Idempotent: uses .set() on that ID, so re-running
+ * overwrites in place rather than creating duplicates.
+ */
+
+const { HAJERI_SERVICE_ACCOUNT } = require('./migration_lib');
+
+const COMMIT = process.argv.includes('--commit');
+
+const HALLS = [
+  { HallName_en: 'Shree Damu Thakre Dawdi', HallName_mr: 'श्री. दामू ठाकरे दावडी' },
+  { HallName_en: 'Shree Bhaskar Gaikar Golavli', HallName_mr: 'श्री. भास्कर गायकर गोळवली' },
+  { HallName_en: 'Shree Shankar Shelar Khambalpada', HallName_mr: 'श्री. शंकर शेलार खंबाळपाडा' },
+  { HallName_en: 'Shree Bharat Mhaskar Mhaskarwada', HallName_mr: 'श्री. भरत म्हसकर म्हास्करवाडा' },
+  { HallName_en: 'Shree Bhushan Mhatre Patharli', HallName_mr: 'श्री. भूषण म्हात्रे पाथर्ली' },
+  { HallName_en: 'Shree Harishchandra Patil Aajdepada', HallName_mr: 'श्री. हरिश्चंद्र पाटील आजदेपदा' },
+  { HallName_en: 'Shree Shyam Patil Malhar', HallName_mr: 'श्री. श्याम पाटील मल्हार बंगला' },
+  { HallName_en: 'Shree Siddharth Mhatre, Sonar Pada', HallName_mr: 'श्री. सिद्धार्थ म्हात्रे सोनारपाडा' },
+  { HallName_en: 'Shree Prakash Patil, Nandivali', HallName_mr: 'श्री. प्रकाश पाटील नांदिवली' },
+  { HallName_en: 'Shree Tanaji Patil, Bhopar', HallName_mr: 'श्री. तानाजी पाटील भोपर' },
+  { HallName_en: 'Shree Praveen Ra. Mhatre, Kopar', HallName_mr: 'श्री. प्रवीण रा. म्हात्रे कोपर' },
+  { HallName_en: 'Shree Omkar Bhoir, Mothagaon', HallName_mr: 'श्री. ओमकार भोईर मोठागाव' },
+  { HallName_en: 'Shree Ramesh Patil, Devicha Pada', HallName_mr: 'श्री. रमेश पाटील देवीचा पाडा' },
+  { HallName_en: 'Shree Sandesh More, Gavdevi Mandir (W)', HallName_mr: 'श्री. संदेश मोरे गावदेवी मंदिर (प.)' },
+  { HallName_en: 'Shree Jeevan Mhatre, Navapada', HallName_mr: 'श्री. जीवन म्हात्रे नवापाडा' },
+  { HallName_en: 'Shree Praveen Mhatre, Dativali', HallName_mr: 'श्री. प्रवीण म्हात्रे दातिवली' },
+  { HallName_en: 'Shree Arun Madhavi, Agasan', HallName_mr: 'श्री. अरुण मढवी आगासन' },
+  { HallName_en: 'Shree Umesh Patil, Sabe, Diva (E)', HallName_mr: 'श्री. उमेश पाटील साबे, दिवा (पू)' },
+  { HallName_en: 'Shree Shailesh Patil, Diva', HallName_mr: 'श्री. शैलेश पाटील दिवा' },
+  { HallName_en: 'Shree Indrapal Patil, Diva (W)', HallName_mr: 'श्री. इंद्रपाल पाटील दिवा (प)' },
+  { HallName_en: 'Shree Chandar Mhatre, Dayghar', HallName_mr: 'श्री. चंदर म्हात्रे डायघर' },
+  { HallName_en: 'Shree Mohan Salvi, Mumbra', HallName_mr: 'श्री. मोहन साळवी मुंब्रा' },
+  { HallName_en: 'Shree Jayanta Patil, Dahisar', HallName_mr: 'श्री. जयंता पाटील दहिसर' },
+  { HallName_en: 'Shree Ananta Patil, Kolegaon', HallName_mr: 'श्री. अनंता पाटील कोळेगाव' },
+  { HallName_en: 'Shree Lahu Farad, Khoni', HallName_mr: 'श्री. लहु फराड खोणी' },
+  { HallName_en: 'Shree Hari Patil, Vadvali', HallName_mr: 'श्री. हरी पाटील वडवली' },
+  { HallName_en: 'Shree Krishna Patil, Vakaln', HallName_mr: 'श्री. कृष्णा पाटील वाकळण' },
+  { HallName_en: 'Shree Rajendra Salvi, Mulund East', HallName_mr: 'श्री. राजेंद्र साळवी, मुलुंड ईस्ट' },
+  { HallName_en: 'Ahilyabai Vidyamandir, Kalachowki Chinchpokli', HallName_mr: 'अहिल्याबाई विद्यामंदिर, काळाचौकी चिंचपोकळी' },
+  { HallName_en: 'Bhandarli', HallName_mr: 'भंडार्ली' },
+];
+
+async function main() {
+  console.log(`${HALLS.length} hall(s) to write into hajeri-465b7 'BaithakHalls'.`);
+  HALLS.forEach((h, i) => console.log(`  ${i + 1}. ${h.HallName_en} | ${h.HallName_mr}`));
+
+  if (!COMMIT) {
+    console.log('\nDry run only — no writes made. Re-run with --commit to write to Firestore.');
+    return;
+  }
+
+  const admin = require('firebase-admin');
+  const hajeriApp = admin.initializeApp(
+    { credential: admin.credential.cert(require(HAJERI_SERVICE_ACCOUNT)), projectId: 'hajeri-465b7' },
+    'hajeri',
+  );
+  const db = hajeriApp.firestore();
+  const collection = db.collection('BaithakHalls');
+
+  // Clean up docs from the earlier run that used auto-generated IDs, so we
+  // don't end up with 60 docs (30 old auto-ID + 30 new HallName_mr-ID).
+  const existing = await collection.get();
+  const hallNamesMr = new Set(HALLS.map(h => h.HallName_mr));
+  let deleted = 0;
+  for (const doc of existing.docs) {
+    if (doc.id !== doc.get('HallName_mr') && hallNamesMr.has(doc.get('HallName_mr'))) {
+      await doc.ref.delete();
+      deleted++;
+    }
+  }
+  console.log(`Deleted ${deleted} old auto-ID doc(s).`);
+
+  let written = 0;
+  for (const hall of HALLS) {
+    await collection.doc(hall.HallName_mr).set(hall);
+    console.log(`  wrote: ${hall.HallName_mr}`);
+    written++;
+  }
+
+  console.log(`\nDone. ${written} written (doc ID = HallName_mr).`);
+}
+
+main().catch(e => {
+  console.error('Fatal:', e.message);
+  process.exit(1);
+});

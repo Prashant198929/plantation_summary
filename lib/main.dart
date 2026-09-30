@@ -22,6 +22,11 @@ import 'mobile_encryption_service.dart';
 import 'upload_queue_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// Shown at the bottom of the login page. Kept in sync with pubspec.yaml's
+// version field by hand — bump both together every time a fix ships (see
+// the version-bump convention).
+const String appVersionLabel = '1.0.0+2';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(

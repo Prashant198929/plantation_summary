@@ -13,7 +13,18 @@ class MobileEncryptionService {
     return Uint8List.fromList(digest.bytes);
   }
 
-  // Triple DES, ECB mode, PKCS7 padding — matches C# TripleDESCryptoServiceProvider
+  // Triple DES, ECB mode, PKCS7 padding — matches C# TripleDESCryptoServiceProvider.
+  // Cached per direction rather than rebuilt per call: cipher.init() re-runs
+  // DESedeEngine's full DES key schedule (pure-Dart bit manipulation), and
+  // _fetchMappedUsers in attendance_support.dart calls decrypt() once per doc
+  // across the whole Shree_Sadasya collection (thousands of users) on every
+  // cache refresh — rebuilding the cipher that often was blocking the UI
+  // thread for seconds on every baithak-hall/zone list load. The key is a
+  // hardcoded constant and ECB has no cross-message chaining state, so the
+  // initialized cipher is safe to reuse across every call.
+  static PaddedBlockCipher? _decryptCipher;
+  static PaddedBlockCipher? _encryptCipher;
+
   static PaddedBlockCipher _buildCipher(bool forEncryption) {
     final keyBytes = _deriveKey(_securityKey);
     final cipher = PaddedBlockCipherImpl(
@@ -31,7 +42,7 @@ class MobileEncryptionService {
   static String? decrypt(String encryptedBase64) {
     try {
       final encryptedBytes = base64.decode(encryptedBase64);
-      final cipher = _buildCipher(false);
+      final cipher = _decryptCipher ??= _buildCipher(false);
       final decrypted = cipher.process(encryptedBytes);
       return utf8.decode(decrypted);
     } catch (e) {
@@ -44,7 +55,7 @@ class MobileEncryptionService {
   static String? encrypt(String plainText) {
     try {
       final plainBytes = Uint8List.fromList(utf8.encode(plainText));
-      final cipher = _buildCipher(true);
+      final cipher = _encryptCipher ??= _buildCipher(true);
       final encrypted = cipher.process(plainBytes);
       return base64.encode(encrypted);
     } catch (e) {

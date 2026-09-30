@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:excel/excel.dart' as xl;
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
@@ -74,9 +75,18 @@ class _AttendancePageState extends State<AttendancePage> {
   final TextEditingController _globalSearchController = TextEditingController();
   List<Map<String, dynamic>> _globalSearchResults = [];
   bool _isGlobalSearching = false;
+  // Mirrors _isGlobalSearching but for the baithak-hall path — set while
+  // _fetchHallDayUsers is in flight so the list area can show a spinner
+  // instead of sitting blank/stale with no feedback during the fetch.
+  bool _isHallLoading = false;
   // Bumped on every _searchAllUsers call so a slower, stale request can't
   // overwrite results from a newer one that finished first.
   int _searchRequestId = 0;
+  // Debounces the cross-zone search box so a full Shree_Sadasya collection
+  // read (there's no server-side query here — see searchUsers) doesn't fire
+  // on every keystroke, which was a major source of daily Firestore read
+  // quota exhaustion.
+  Timer? _searchDebounce;
   // Tracks whichever of "search box" / "baithak hall" the admin touched most
   // recently, so the list below always reflects the latest action.
   bool _useGlobalSearchList = false;
@@ -119,17 +129,151 @@ class _AttendancePageState extends State<AttendancePage> {
     return _selectedUsers.any((u) => u['uid']?.toString() == uid);
   }
 
-  void _toggleUserSelection(Map<String, dynamic> user, bool checked) {
+  // Fires the moment a checkbox is checked — writes that one user's
+  // attendance record straight to Firestore instead of waiting for a
+  // separate "उपस्थिती नोंदवा" submit button (removed; there's nothing left
+  // to batch-submit). Same docId scheme as before
+  // (invertedDate_uid_zoneKey), so re-checking someone already marked for
+  // this zone/day still can't create a duplicate. On success the docId is
+  // added to _alreadyMarkedDocIds, which is what makes the checkbox's
+  // onChanged treat the next uncheck as "remove already-marked attendance"
+  // (confirm dialog + delete) rather than a plain local deselect.
+  Future<void> _markUserAttendance(Map<String, dynamic> user) async {
     final uid = user['uid']?.toString();
+    if (uid == null || uid.isEmpty || _secondaryFirestore == null) return;
+    if (_selectedTopics.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('कृपया किमान एक कामाचे स्वरूप निवडा')),
+      );
+      return;
+    }
+    if (_selectedPlace == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('कृपया ठिकाण निवडा')));
+      return;
+    }
+    if (_selectedPlace == _umbarliPlaceName &&
+        (_selectedZone == null || _selectedZone!.isEmpty)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('कृपया झोन निवडा')));
+      return;
+    }
+
+    final selectedPlaceData = _places.firstWhere(
+      (p) => p['placeName'] == _selectedPlace,
+      orElse: () => <String, dynamic>{
+        'locationEn': _selectedPlace ?? '',
+        'locationMr': _selectedPlace ?? '',
+      },
+    );
+    final monthKey = AttendanceSupport.monthYearKey(_selectedDate);
+    final dateKey =
+        '${_selectedDate.year.toString().padLeft(4, '0')}${_selectedDate.month.toString().padLeft(2, '0')}${_selectedDate.day.toString().padLeft(2, '0')}';
+    final invertedDate = 99999999 - int.parse(dateKey);
+    final selectedZone = _selectedZone ?? '';
+    final zoneKey = AttendanceSupport.zoneKey(
+      AttendanceSupport.toEnglishZoneLabel(selectedZone),
+    );
+    final docId = '${invertedDate}_${uid}_$zoneKey';
+    final docRef = _secondaryFirestore!
+        .collection('Attendance')
+        .doc(monthKey)
+        .collection('records')
+        .doc(docId);
+
+    // Optimistic check so the box shows checked immediately instead of
+    // waiting on the network round-trip below.
     setState(() {
-      if (checked) {
-        if (!_selectedUsers.any((u) => u['uid']?.toString() == uid)) {
-          _selectedUsers.add(user);
-        }
-      } else {
-        _selectedUsers.removeWhere((u) => u['uid']?.toString() == uid);
+      if (!_selectedUsers.any((u) => u['uid']?.toString() == uid)) {
+        _selectedUsers.add(user);
       }
     });
+
+    try {
+      final existing = await docRef.get();
+      if (existing.exists) {
+        if (!mounted) return;
+        setState(() => _alreadyMarkedDocIds[uid] = docId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('या तारखेला उपस्थिती नोंदवली आहे.')),
+        );
+        return;
+      }
+      final userName = (user['name'] ?? '').toString();
+      final userNameMr = (user['name_mr'] ?? '').toString();
+      final recordData = {
+        'date': Timestamp.fromDate(_selectedDate),
+        'time': DateTime.now().toLocal().toString().split(' ')[1],
+        'status': 'Present',
+        'Topic': _selectedTopics.join(', '),
+        'work_hours': _workHoursController.text.trim(),
+        'Location_En': selectedPlaceData['locationEn'] ?? '',
+        'Location_Mr': selectedPlaceData['locationMr'] ?? '',
+        'zone': AttendanceSupport.toEnglishZoneLabel(selectedZone),
+        'zone_mr': AttendanceSupport.toMarathiZoneLabel(selectedZone),
+        'name': user['name'],
+        'name_mr': userNameMr.isNotEmpty
+            ? userNameMr
+            : TransliterationService.toDevanagari(userName),
+        'userId': user['uid'],
+        'mobile':
+            MobileEncryptionService.encrypt(
+              (user['mobile'] ?? '').toString(),
+            ) ??
+            user['mobile'],
+        'baithak': user['baithak'] ?? '',
+        'baithak_mr': user['baithak_mr'] ?? '',
+        'baithak_day': user['baithak_day'] ?? '',
+        'baithak_day_mr': user['baithak_day_mr'] ?? '',
+        'hajeri_kramank': user['hajeri_kramank'] ?? '',
+        'markedBy_uid': _currentUserUid ?? '',
+        'markedBy_name': _currentUserName ?? '',
+        'markedBy_name_mr': _currentUserNameMr ?? '',
+      };
+      await docRef.set(recordData);
+      await FirebaseConfig.logEvent(
+        eventType: 'attendance_marked',
+        description: 'Attendance marked',
+        isImportant: true,
+        userId: loggedInMobile,
+        details: {
+          'count': 1,
+          'users': [user['name']],
+          'date': _selectedDate.toIso8601String(),
+          'place': selectedPlaceData['locationEn'],
+          'topics': _selectedTopics,
+        },
+      );
+      if (!mounted) return;
+      setState(() => _alreadyMarkedDocIds[uid] = docId);
+      AttendanceSupport.bumpAttendanceCount(uid, 1);
+      // Denormalized count read by the hall/search list sort (see
+      // AttendanceSupport.attendanceCountsFromUsers) — fire-and-forget so a
+      // slow/failed write here doesn't affect the already-succeeded mark.
+      final userDocId = (user['docId'] ?? '').toString();
+      if (userDocId.isNotEmpty) {
+        widget.userFirestore
+            .collection('Shree_Sadasya')
+            .doc(userDocId)
+            .set({
+              'attendanceCount': FieldValue.increment(1),
+            }, SetOptions(merge: true))
+            .catchError(
+              (e) => debugPrint('Error incrementing attendanceCount: $e'),
+            );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _selectedUsers.removeWhere((u) => u['uid']?.toString() == uid);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('उपस्थिती नोंदवताना त्रुटी: $e')),
+        );
+      }
+    }
   }
 
   // A tappable field that looks like a dropdown but opens a checklist so the
@@ -368,6 +512,7 @@ class _AttendancePageState extends State<AttendancePage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _workHoursController.dispose();
     _globalSearchController.dispose();
     super.dispose();
@@ -382,6 +527,11 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
+  // Bumped on every _fetchHallDayUsers call so a slower, stale fetch (e.g.
+  // the admin flips through halls quickly) can't overwrite results from a
+  // newer one that finished first — mirrors _searchRequestId below.
+  int _hallRequestId = 0;
+
   Future<void> _fetchHallDayUsers() async {
     // Captured before refetching so a pull-to-refresh (this also runs via
     // _refreshDisplayUsers, wired to the member list's RefreshIndicator —
@@ -393,6 +543,7 @@ class _AttendancePageState extends State<AttendancePage> {
     // refresh while browsing search results would drop those picks since
     // their uids can't possibly be in the new hall list. A genuine hall/
     // session switch still clears selection for anyone in neither list.
+    final requestId = ++_hallRequestId;
     final pendingUsers = List<Map<String, dynamic>>.from(_selectedUsers);
     final searchUids = _globalSearchResults
         .map((u) => (u['uid'] ?? '').toString())
@@ -403,6 +554,7 @@ class _AttendancePageState extends State<AttendancePage> {
       setState(() {
         _hallUsers = [];
         _filteredUsers = [];
+        _isHallLoading = false;
         _selectedUsers = pendingUsers
             .where((u) => searchUids.contains((u['uid'] ?? '').toString()))
             .toList();
@@ -410,27 +562,38 @@ class _AttendancePageState extends State<AttendancePage> {
       });
       return;
     }
-    final users = await AttendanceSupport.fetchUsersByHallAndDay(
-      widget.userFirestore,
-      _selectedBaithakHallMr,
-      _selectedBaithakDayMr,
-    );
-    final counts = await AttendanceSupport.fetchAttendanceCounts(
-      _secondaryFirestore,
-      users.map((u) => (u['uid'] ?? '').toString()).toList(),
-    );
-    final sortedUsers = AttendanceSupport.sortByAttendanceCount(users, counts);
     if (!mounted) return;
-    final hallUids = sortedUsers.map((u) => (u['uid'] ?? '').toString()).toSet();
-    setState(() {
-      _hallUsers = sortedUsers;
-      _filteredUsers = sortedUsers;
-      _selectedUsers = pendingUsers.where((u) {
-        final uid = (u['uid'] ?? '').toString();
-        return hallUids.contains(uid) || searchUids.contains(uid);
-      }).toList();
-      _userListCurrentPage = 1;
-    });
+    setState(() => _isHallLoading = true);
+    try {
+      final users = await AttendanceSupport.fetchUsersByHallAndDay(
+        widget.userFirestore,
+        _selectedBaithakHallMr,
+        _selectedBaithakDayMr,
+      );
+      final counts = AttendanceSupport.attendanceCountsFromUsers(users);
+      final sortedUsers = AttendanceSupport.sortByAttendanceCount(
+        users,
+        counts,
+      );
+      if (!mounted || requestId != _hallRequestId) return;
+      final hallUids = sortedUsers
+          .map((u) => (u['uid'] ?? '').toString())
+          .toSet();
+      setState(() {
+        _hallUsers = sortedUsers;
+        _filteredUsers = sortedUsers;
+        _selectedUsers = pendingUsers.where((u) {
+          final uid = (u['uid'] ?? '').toString();
+          return hallUids.contains(uid) || searchUids.contains(uid);
+        }).toList();
+        _userListCurrentPage = 1;
+      });
+    } finally {
+      if (mounted && requestId == _hallRequestId) {
+        setState(() => _isHallLoading = false);
+      }
+    }
+    if (!mounted || requestId != _hallRequestId) return;
     await _syncAlreadyMarkedForDate();
   }
 
@@ -530,6 +693,19 @@ class _AttendancePageState extends State<AttendancePage> {
         _alreadyMarkedDocIds.remove(uid);
         _selectedUsers.removeWhere((u) => u['uid']?.toString() == uid);
       });
+      AttendanceSupport.bumpAttendanceCount(uid, -1);
+      final userDocId = (user['docId'] ?? '').toString();
+      if (userDocId.isNotEmpty) {
+        widget.userFirestore
+            .collection('Shree_Sadasya')
+            .doc(userDocId)
+            .set({
+              'attendanceCount': FieldValue.increment(-1),
+            }, SetOptions(merge: true))
+            .catchError(
+              (e) => debugPrint('Error decrementing attendanceCount: $e'),
+            );
+      }
       await FirebaseConfig.logEvent(
         eventType: 'attendance_unmarked',
         description: 'Attendance removed for a previously marked user',
@@ -563,10 +739,27 @@ class _AttendancePageState extends State<AttendancePage> {
     final usersToShow = isGlobalSearchActive
         ? _globalSearchResults
         : _filteredUsers;
-    final showEmptyMessage = !isGlobalSearchActive && _displayUsers.isEmpty;
+    final showEmptyMessage =
+        !isGlobalSearchActive && _displayUsers.isEmpty && !_isHallLoading;
 
     if (showEmptyMessage) {
       return Text('कृपया बैठक हॉल निवडा किंवा सदस्य शोधा.');
+    }
+
+    if (!isGlobalSearchActive && _isHallLoading && _displayUsers.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 8),
+              Text('यादी लोड होत आहे...'),
+            ],
+          ),
+        ),
+      );
     }
 
     return Column(
@@ -611,6 +804,11 @@ class _AttendancePageState extends State<AttendancePage> {
             child: Text('किमान ३ अक्षरे किंवा अंक टाका.'),
           ),
         if (isGlobalSearchActive && hasEnoughSearchText && _isGlobalSearching)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: LinearProgressIndicator(),
+          ),
+        if (!isGlobalSearchActive && _isHallLoading && _displayUsers.isNotEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 4),
             child: LinearProgressIndicator(),
@@ -758,12 +956,12 @@ class _AttendancePageState extends State<AttendancePage> {
                                 subtitle: isGlobalSearchActive
                                     ? Text(
                                         'झोन: ${(user['zone_mr'] ?? '').toString().isNotEmpty ? user['zone_mr'] : user['zone']}   बैठक ठिकाण: ${user['baithak_mr'] ?? ''}'
-                                        '${isAlreadyMarked ? '\nया तारखेला आधीच उपस्थिती नोंदवली आहे' : ''}',
+                                        '${isAlreadyMarked ? '\nया तारखेला उपस्थिती नोंदवली आहे' : ''}',
                                         style: TextStyle(fontSize: 10),
                                       )
                                     : (isAlreadyMarked
                                           ? Text(
-                                              'या तारखेला आधीच उपस्थिती नोंदवली आहे',
+                                              'या तारखेला उपस्थिती नोंदवली आहे',
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 color: Colors.green[800],
@@ -802,7 +1000,6 @@ class _AttendancePageState extends State<AttendancePage> {
                                     await _removeAlreadyMarkedAttendance(user);
                                     return;
                                   }
-                                  _toggleUserSelection(user, checked == true);
                                   Future.microtask(() async {
                                     await FirebaseConfig.logEvent(
                                       eventType: 'attendance_user_toggled',
@@ -815,6 +1012,15 @@ class _AttendancePageState extends State<AttendancePage> {
                                       },
                                     );
                                   });
+                                  if (checked == true) {
+                                    await _markUserAttendance(user);
+                                  } else {
+                                    setState(() {
+                                      _selectedUsers.removeWhere(
+                                        (u) => u['uid']?.toString() == uid,
+                                      );
+                                    });
+                                  }
                                 },
                                 dense: true,
                                 visualDensity: const VisualDensity(
@@ -1001,6 +1207,24 @@ class _AttendancePageState extends State<AttendancePage> {
     );
   }
 
+  // Wired to the search box's onChanged instead of _searchAllUsers directly.
+  // Below the 3-character minimum there's no Firestore read to debounce (see
+  // _searchAllUsers's own short-circuit), so that path runs immediately;
+  // once there's enough text to actually search, the real fetch waits for a
+  // pause in typing instead of re-reading the whole Shree_Sadasya collection
+  // on every keystroke.
+  void _onGlobalSearchChanged(String query) {
+    _searchDebounce?.cancel();
+    if (query.trim().length < 3) {
+      _searchAllUsers(query);
+      return;
+    }
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 400),
+      () => _searchAllUsers(query),
+    );
+  }
+
   Future<void> _searchAllUsers(String query) async {
     if (!mounted) return;
     final requestId = ++_searchRequestId;
@@ -1019,10 +1243,7 @@ class _AttendancePageState extends State<AttendancePage> {
       widget.userFirestore,
       query,
     );
-    final counts = await AttendanceSupport.fetchAttendanceCounts(
-      _secondaryFirestore,
-      results.map((u) => (u['uid'] ?? '').toString()).toList(),
-    );
+    final counts = AttendanceSupport.attendanceCountsFromUsers(results);
     final sortedResults = AttendanceSupport.sortByAttendanceCount(
       results,
       counts,
@@ -1137,10 +1358,15 @@ class _AttendancePageState extends State<AttendancePage> {
     }
   }
 
-  // Exports everyone marked present on _selectedDate for the currently
-  // selected hall + zone, read straight from Firestore — so it includes
-  // marks from an earlier, separate visit (e.g. marked 2 hours ago) just as
-  // well as ones made in this session, since both are the same query.
+  // Exports everyone the logged-in admin marked present on _selectedDate,
+  // across EVERY hall/zone they touched that day — not just whichever
+  // hall/zone dropdown happens to be selected right now. Attendance is
+  // marked per-checkbox as soon as it's checked (see _markUserAttendance),
+  // possibly across several hall/zone switches in one sitting, so filtering
+  // by markedBy_uid + date (rather than the current zone/hall selection) is
+  // what lets a single download at the end cover all of them. Read straight
+  // from Firestore, so it includes marks from an earlier, separate visit
+  // (e.g. marked 2 hours ago) just as well as ones made in this session.
   Future<void> _downloadTodayMarkedExcel({bool download = false}) async {
     await FirebaseConfig.logEvent(
       eventType: download
@@ -1152,6 +1378,20 @@ class _AttendancePageState extends State<AttendancePage> {
       userId: loggedInMobile,
     );
     if (_secondaryFirestore == null) return;
+    // Without a resolved admin identity, a blank-string match below would
+    // wrongly sweep up old records that also have no markedBy_uid.
+    if (_currentUserUid == null || _currentUserUid!.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'वापरकर्ता ओळखता आली नाही, कृपया पुन्हा प्रयत्न करा.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     final monthKey = AttendanceSupport.monthYearKey(_selectedDate);
     final startOfDay = DateTime(
       _selectedDate.year,
@@ -1159,18 +1399,6 @@ class _AttendancePageState extends State<AttendancePage> {
       _selectedDate.day,
     );
     final endOfDay = startOfDay.add(const Duration(days: 1));
-    final selectedZoneKey = AttendanceSupport.zoneKey(
-      AttendanceSupport.toEnglishZoneLabel(_selectedZone ?? ''),
-    );
-    // Match hall membership via _hallUsers' uids (already resolved by
-    // fetchUsersByHallAndDay) rather than comparing the record's stored
-    // baithak_mr text — older/migrated records often have baithak_mr blank
-    // (only the English 'baithak' is guaranteed), which made this filter
-    // silently exclude everyone even though they show green/already-marked.
-    final hallUserUids = _hallUsers
-        .map((u) => (u['uid'] ?? '').toString())
-        .where((uid) => uid.isNotEmpty)
-        .toSet();
     List<Map<String, dynamic>> records;
     try {
       final snap = await _secondaryFirestore!
@@ -1181,17 +1409,7 @@ class _AttendancePageState extends State<AttendancePage> {
           .where('date', isLessThan: Timestamp.fromDate(endOfDay))
           .get();
       records = snap.docs.map((d) => d.data()).where((data) {
-        final recordZoneKey = AttendanceSupport.zoneKey(
-          AttendanceSupport.toEnglishZoneLabel(
-            (data['zone'] ?? data['zone_mr'] ?? '').toString(),
-          ),
-        );
-        if (recordZoneKey != selectedZoneKey) return false;
-        if (hallUserUids.isNotEmpty &&
-            !hallUserUids.contains((data['userId'] ?? '').toString())) {
-          return false;
-        }
-        return true;
+        return (data['markedBy_uid'] ?? '').toString() == _currentUserUid;
       }).toList();
     } catch (e) {
       if (mounted) {
@@ -1651,493 +1869,609 @@ class _AttendancePageState extends State<AttendancePage> {
                   Expanded(
                     child: _isLoading
                         ? Center(child: CircularProgressIndicator())
-                        : Column(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        : LayoutBuilder(
+                            builder: (context, sectionConstraints) {
+                              return Column(
                                 children: [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      await FirebaseConfig.logEvent(
-                                        eventType: 'attendance_topics_clicked',
-                                        description:
-                                            'Attendance topics clicked',
-                                        userId: loggedInMobile,
-                                      );
-                                      final selected = await showDialog<List<String>>(
-                                        context: context,
-                                        builder: (context) {
-                                          List<String> tempSelected = List.from(
-                                            _selectedTopics,
-                                          );
-                                          return StatefulBuilder(
-                                            builder: (context, setStateDialog) {
-                                              return AlertDialog(
-                                                title: Text(
-                                                  'कामाचे स्वरूप निवडा',
-                                                ),
-                                                content: Container(
-                                                  width: double.maxFinite,
-                                                  child: ListView(
-                                                    shrinkWrap: true,
-                                                    children: _topics.map((
-                                                      topic,
-                                                    ) {
-                                                      final isSelected =
-                                                          tempSelected.contains(
-                                                            topic,
-                                                          );
-                                                      return CheckboxListTile(
-                                                        title: Text(topic),
-                                                        value: isSelected,
-                                                        onChanged: (checked) {
-                                                          setStateDialog(() {
-                                                            if (checked ==
-                                                                true) {
-                                                              if (!tempSelected
-                                                                  .contains(
-                                                                    topic,
-                                                                  )) {
-                                                                tempSelected
-                                                                    .add(topic);
-                                                              }
-                                                            } else {
-                                                              tempSelected
-                                                                  .remove(
-                                                                    topic,
-                                                                  );
-                                                            }
-                                                          });
-                                                          Future.microtask(() async {
-                                                            await FirebaseConfig.logEvent(
-                                                              eventType:
-                                                                  'attendance_topic_toggled',
-                                                              description:
-                                                                  'Attendance topic toggled',
-                                                              userId:
-                                                                  loggedInMobile,
-                                                              details: {
-                                                                'topic': topic,
-                                                                'selected':
-                                                                    checked ==
-                                                                    true,
-                                                              },
-                                                            );
-                                                          });
-                                                        },
-                                                      );
-                                                    }).toList(),
-                                                  ),
-                                                ),
-                                                actions: [
-                                                  TextButton(
-                                                    child: Text('ठीक आहे'),
-                                                    onPressed: () async {
-                                                      await FirebaseConfig.logEvent(
-                                                        eventType:
-                                                            'attendance_topics_ok',
-                                                        description:
-                                                            'Attendance topics OK',
-                                                        userId: loggedInMobile,
-                                                        details: {
-                                                          'topics':
-                                                              tempSelected,
-                                                        },
-                                                      );
-                                                      Navigator.of(
-                                                        context,
-                                                      ).pop(tempSelected);
-                                                    },
-                                                  ),
-                                                  TextButton(
-                                                    child: Text('रद्द करा'),
-                                                    onPressed: () async {
-                                                      await FirebaseConfig.logEvent(
-                                                        eventType:
-                                                            'attendance_topics_cancel',
-                                                        description:
-                                                            'Attendance topics cancel',
-                                                        userId: loggedInMobile,
-                                                      );
-                                                      Navigator.of(
-                                                        context,
-                                                      ).pop(_selectedTopics);
-                                                    },
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          );
-                                        },
-                                      );
-                                      if (selected != null) {
-                                        setState(() {
-                                          _selectedTopics = selected;
-                                        });
-                                      }
-                                    },
-                                    child: InputDecorator(
-                                      decoration: const InputDecoration(
-                                        labelText: 'कामाचे स्वरूप',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 2,
-                                        ),
-                                      ),
-                                      child: Row(
+                                  // ConstrainedBox+shrinkWrap SingleChildScrollView
+                                  // instead of a plain Column (or a bare Flexible,
+                                  // which — since Flutter's Flex layout hands each
+                                  // non-last flexible child a fixed up-front quota
+                                  // instead of only what it actually needs — was
+                                  // permanently reserving ~half this section's
+                                  // height for the header, starving the member
+                                  // list below it even when the header only used a
+                                  // fraction of that quota). Capping this at the
+                                  // section's own full height means the header
+                                  // still only consumes its natural (small) size
+                                  // normally, handing everything else to the
+                                  // Expanded list below, and only scrolls
+                                  // internally in the rare case where its content
+                                  // (e.g. the keyboard opening on a real device)
+                                  // doesn't fit — instead of overflowing.
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxHeight: sectionConstraints.maxHeight,
+                                    ),
+                                    child: SingleChildScrollView(
+                                      child: Column(
                                         children: [
-                                          Expanded(
-                                            child: Text(
-                                              _selectedTopics.isEmpty
-                                                  ? 'कामाचे स्वरूप निवडा'
-                                                  : _selectedTopics.join(', '),
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: _selectedTopics.isEmpty
-                                                    ? Theme.of(
-                                                        context,
-                                                      ).hintColor
-                                                    : null,
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () async {
+                                                  await FirebaseConfig.logEvent(
+                                                    eventType:
+                                                        'attendance_topics_clicked',
+                                                    description:
+                                                        'Attendance topics clicked',
+                                                    userId: loggedInMobile,
+                                                  );
+                                                  final selected = await showDialog<List<String>>(
+                                                    context: context,
+                                                    builder: (context) {
+                                                      List<String>
+                                                      tempSelected = List.from(
+                                                        _selectedTopics,
+                                                      );
+                                                      return StatefulBuilder(
+                                                        builder: (context, setStateDialog) {
+                                                          return AlertDialog(
+                                                            title: Text(
+                                                              'कामाचे स्वरूप निवडा',
+                                                            ),
+                                                            content: Container(
+                                                              width: double
+                                                                  .maxFinite,
+                                                              child: ListView(
+                                                                shrinkWrap:
+                                                                    true,
+                                                                children: _topics.map((
+                                                                  topic,
+                                                                ) {
+                                                                  final isSelected =
+                                                                      tempSelected
+                                                                          .contains(
+                                                                            topic,
+                                                                          );
+                                                                  return CheckboxListTile(
+                                                                    title: Text(
+                                                                      topic,
+                                                                    ),
+                                                                    value:
+                                                                        isSelected,
+                                                                    onChanged: (checked) {
+                                                                      setStateDialog(() {
+                                                                        if (checked ==
+                                                                            true) {
+                                                                          if (!tempSelected.contains(
+                                                                            topic,
+                                                                          )) {
+                                                                            tempSelected.add(
+                                                                              topic,
+                                                                            );
+                                                                          }
+                                                                        } else {
+                                                                          tempSelected.remove(
+                                                                            topic,
+                                                                          );
+                                                                        }
+                                                                      });
+                                                                      Future.microtask(() async {
+                                                                        await FirebaseConfig.logEvent(
+                                                                          eventType:
+                                                                              'attendance_topic_toggled',
+                                                                          description:
+                                                                              'Attendance topic toggled',
+                                                                          userId:
+                                                                              loggedInMobile,
+                                                                          details: {
+                                                                            'topic':
+                                                                                topic,
+                                                                            'selected':
+                                                                                checked ==
+                                                                                true,
+                                                                          },
+                                                                        );
+                                                                      });
+                                                                    },
+                                                                  );
+                                                                }).toList(),
+                                                              ),
+                                                            ),
+                                                            actions: [
+                                                              TextButton(
+                                                                child: Text(
+                                                                  'ठीक आहे',
+                                                                ),
+                                                                onPressed: () async {
+                                                                  await FirebaseConfig.logEvent(
+                                                                    eventType:
+                                                                        'attendance_topics_ok',
+                                                                    description:
+                                                                        'Attendance topics OK',
+                                                                    userId:
+                                                                        loggedInMobile,
+                                                                    details: {
+                                                                      'topics':
+                                                                          tempSelected,
+                                                                    },
+                                                                  );
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop(
+                                                                    tempSelected,
+                                                                  );
+                                                                },
+                                                              ),
+                                                              TextButton(
+                                                                child: Text(
+                                                                  'रद्द करा',
+                                                                ),
+                                                                onPressed: () async {
+                                                                  await FirebaseConfig.logEvent(
+                                                                    eventType:
+                                                                        'attendance_topics_cancel',
+                                                                    description:
+                                                                        'Attendance topics cancel',
+                                                                    userId:
+                                                                        loggedInMobile,
+                                                                  );
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop(
+                                                                    _selectedTopics,
+                                                                  );
+                                                                },
+                                                              ),
+                                                            ],
+                                                          );
+                                                        },
+                                                      );
+                                                    },
+                                                  );
+                                                  if (selected != null) {
+                                                    setState(() {
+                                                      _selectedTopics =
+                                                          selected;
+                                                    });
+                                                  }
+                                                },
+                                                child: InputDecorator(
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText:
+                                                            'कामाचे स्वरूप',
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                        isDense: true,
+                                                        contentPadding:
+                                                            EdgeInsets.symmetric(
+                                                              horizontal: 10,
+                                                              vertical: 2,
+                                                            ),
+                                                      ),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          _selectedTopics
+                                                                  .isEmpty
+                                                              ? 'कामाचे स्वरूप निवडा'
+                                                              : _selectedTopics
+                                                                    .join(', '),
+                                                          style: TextStyle(
+                                                            fontSize: 14,
+                                                            color:
+                                                                _selectedTopics
+                                                                    .isEmpty
+                                                                ? Theme.of(
+                                                                    context,
+                                                                  ).hintColor
+                                                                : null,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Icon(
+                                                        Icons.arrow_drop_down,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 8),
+                                          DropdownButtonFormField<String>(
+                                            decoration: InputDecoration(
+                                              labelText: 'ठिकाण',
+                                              border: OutlineInputBorder(),
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 2,
+                                                  ),
                                             ),
-                                          ),
-                                          Icon(Icons.arrow_drop_down),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8),
-                              DropdownButtonFormField<String>(
-                                decoration: InputDecoration(
-                                  labelText: 'ठिकाण',
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 2,
-                                  ),
-                                ),
-                                value: _selectedPlace,
-                                hint: Text(
-                                  'ठिकाण निवडा',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                                items: _places.map((place) {
-                                  return DropdownMenuItem(
-                                    value: place['placeName'] as String,
-                                    child: Text(
-                                      place['placeName'] as String,
-                                      style: TextStyle(fontSize: 13),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  final zoneChanged =
-                                      value != _umbarliPlaceName &&
-                                      _selectedZone != null;
-                                  setState(() {
-                                    _selectedPlace = value;
-                                    // झोन only applies when marking attendance
-                                    // at उंबार्ली — clear any stale selection
-                                    // for other places, where it's disabled.
-                                    if (value != _umbarliPlaceName) {
-                                      _selectedZone = null;
-                                    }
-                                  });
-                                  // Already-marked is zone-scoped, so
-                                  // clearing the zone needs a fresh
-                                  // lookup too.
-                                  if (zoneChanged) {
-                                    _syncAlreadyMarkedForDate();
-                                  }
-                                  Future.microtask(() async {
-                                    await FirebaseConfig.logEvent(
-                                      eventType: 'attendance_place_changed',
-                                      description: 'Attendance place changed',
-                                      userId: loggedInMobile,
-                                      details: {'place': value},
-                                    );
-                                  });
-                                },
-                              ),
-                              SizedBox(height: 8),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _workHoursController,
-                                      keyboardType:
-                                          const TextInputType.numberWithOptions(
-                                            decimal: true,
-                                          ),
-                                      decoration: const InputDecoration(
-                                        labelText: 'कामाचे तास (Work Hours)',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 2,
-                                        ),
-                                      ),
-                                      onChanged: (value) {
-                                        Future.microtask(() async {
-                                          await FirebaseConfig.logEvent(
-                                            eventType:
-                                                'attendance_work_hours_changed',
-                                            description:
-                                                'Attendance work hours changed',
-                                            userId: loggedInMobile,
-                                            details: {'workHours': value},
-                                          );
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  if (_canViewAttendance) ...[
-                                    SizedBox(width: 12),
-                                    Expanded(
-                                      child: DropdownButtonFormField<String>(
-                                        value: _selectedZone,
-                                        menuMaxHeight: 300,
-                                        isExpanded: true,
-                                        hint: Text(
-                                          'झोन निवडा',
-                                          style: TextStyle(fontSize: 13),
-                                        ),
-                                        items: _zones
-                                            .map(
-                                              (zone) => DropdownMenuItem(
-                                                value: zone,
+                                            value: _selectedPlace,
+                                            hint: Text(
+                                              'ठिकाण निवडा',
+                                              style: TextStyle(fontSize: 13),
+                                            ),
+                                            items: _places.map((place) {
+                                              return DropdownMenuItem(
+                                                value:
+                                                    place['placeName']
+                                                        as String,
                                                 child: Text(
-                                                  zone,
+                                                  place['placeName'] as String,
                                                   style: TextStyle(
                                                     fontSize: 13,
                                                   ),
                                                 ),
-                                              ),
-                                            )
-                                            .toList(),
-                                        onChanged:
-                                            _selectedPlace == _umbarliPlaceName
-                                            ? (value) async {
-                                                setState(() {
-                                                  _selectedZone = value;
-                                                  _selectedUsers = [];
-                                                  _searchController.clear();
-                                                });
-                                                // Already-marked is
-                                                // zone-scoped, so
-                                                // switching zones needs
-                                                // a fresh lookup.
-                                                await _syncAlreadyMarkedForDate();
+                                              );
+                                            }).toList(),
+                                            onChanged: (value) {
+                                              final zoneChanged =
+                                                  value != _umbarliPlaceName &&
+                                                  _selectedZone != null;
+                                              setState(() {
+                                                _selectedPlace = value;
+                                                // झोन only applies when marking attendance
+                                                // at उंबार्ली — clear any stale selection
+                                                // for other places, where it's disabled.
+                                                if (value !=
+                                                    _umbarliPlaceName) {
+                                                  _selectedZone = null;
+                                                }
+                                              });
+                                              // Already-marked is zone-scoped, so
+                                              // clearing the zone needs a fresh
+                                              // lookup too.
+                                              if (zoneChanged) {
+                                                _syncAlreadyMarkedForDate();
+                                              }
+                                              Future.microtask(() async {
                                                 await FirebaseConfig.logEvent(
                                                   eventType:
-                                                      'attendance_zone_changed',
+                                                      'attendance_place_changed',
                                                   description:
-                                                      'Attendance zone changed',
+                                                      'Attendance place changed',
                                                   userId: loggedInMobile,
-                                                  details: {'zone': value},
+                                                  details: {'place': value},
                                                 );
-                                              }
-                                            : null,
-                                        decoration: const InputDecoration(
-                                          labelText: 'झोन',
-                                          border: OutlineInputBorder(),
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 2,
+                                              });
+                                            },
                                           ),
-                                        ),
+                                          SizedBox(height: 8),
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: TextField(
+                                                  controller:
+                                                      _workHoursController,
+                                                  keyboardType:
+                                                      const TextInputType.numberWithOptions(
+                                                        decimal: true,
+                                                      ),
+                                                  decoration: const InputDecoration(
+                                                    labelText:
+                                                        'कामाचे तास (Work Hours)',
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                    isDense: true,
+                                                    contentPadding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 10,
+                                                          vertical: 2,
+                                                        ),
+                                                  ),
+                                                  onChanged: (value) {
+                                                    Future.microtask(() async {
+                                                      await FirebaseConfig.logEvent(
+                                                        eventType:
+                                                            'attendance_work_hours_changed',
+                                                        description:
+                                                            'Attendance work hours changed',
+                                                        userId: loggedInMobile,
+                                                        details: {
+                                                          'workHours': value,
+                                                        },
+                                                      );
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                              if (_canViewAttendance) ...[
+                                                SizedBox(width: 12),
+                                                Expanded(
+                                                  child: DropdownButtonFormField<String>(
+                                                    value: _selectedZone,
+                                                    menuMaxHeight: 300,
+                                                    isExpanded: true,
+                                                    hint: Text(
+                                                      'झोन निवडा',
+                                                      style: TextStyle(
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    items: _zones
+                                                        .map(
+                                                          (
+                                                            zone,
+                                                          ) => DropdownMenuItem(
+                                                            value: zone,
+                                                            child: Text(
+                                                              zone,
+                                                              style: TextStyle(
+                                                                fontSize: 13,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        )
+                                                        .toList(),
+                                                    onChanged:
+                                                        _selectedPlace ==
+                                                            _umbarliPlaceName
+                                                        ? (value) async {
+                                                            setState(() {
+                                                              _selectedZone =
+                                                                  value;
+                                                              _selectedUsers =
+                                                                  [];
+                                                              _searchController
+                                                                  .clear();
+                                                            });
+                                                            // Already-marked is
+                                                            // zone-scoped, so
+                                                            // switching zones needs
+                                                            // a fresh lookup.
+                                                            await _syncAlreadyMarkedForDate();
+                                                            await FirebaseConfig.logEvent(
+                                                              eventType:
+                                                                  'attendance_zone_changed',
+                                                              description:
+                                                                  'Attendance zone changed',
+                                                              userId:
+                                                                  loggedInMobile,
+                                                              details: {
+                                                                'zone': value,
+                                                              },
+                                                            );
+                                                          }
+                                                        : null,
+                                                    decoration: const InputDecoration(
+                                                      labelText: 'झोन',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                      isDense: true,
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 2,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          SizedBox(height: 8),
+                                          // Selections made from the baithak-hall list must be marked
+                                          // (which clears _selectedUsers) before switching to the
+                                          // cross-zone search — mixing sources mid-selection would let
+                                          // an admin lose track of who they'd already picked.
+                                          GestureDetector(
+                                            onTap:
+                                                (_hasPendingSelections &&
+                                                    !_useGlobalSearchList)
+                                                ? () {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'कृपया आधी निवडलेल्या सदस्यांची उपस्थिती नोंदवा, त्यानंतर शोधा.',
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                : null,
+                                            child: AbsorbPointer(
+                                              absorbing:
+                                                  _hasPendingSelections &&
+                                                  !_useGlobalSearchList,
+                                              child: TextField(
+                                                controller:
+                                                    _globalSearchController,
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                ),
+                                                decoration: const InputDecoration(
+                                                  labelText:
+                                                      'दुसऱ्या झोन मधील श्री सदस्य शोधा',
+                                                  labelStyle: TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                  border: OutlineInputBorder(),
+                                                  prefixIcon: Icon(
+                                                    Icons.person_search,
+                                                    size: 18,
+                                                  ),
+                                                  // Same fixed 48x48 prefixIcon
+                                                  // tap-target issue as the user-name
+                                                  // search field above.
+                                                  prefixIconConstraints:
+                                                      BoxConstraints(
+                                                        minWidth: 32,
+                                                        minHeight: 32,
+                                                      ),
+                                                  isDense: true,
+                                                  contentPadding:
+                                                      EdgeInsets.symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 2,
+                                                      ),
+                                                ),
+                                                onChanged:
+                                                    _onGlobalSearchChanged,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 8),
+                                          // Same rule in reverse — selections made from a cross-zone
+                                          // search must be marked before switching the baithak hall.
+                                          GestureDetector(
+                                            onTap:
+                                                (_hasPendingSelections &&
+                                                    _useGlobalSearchList)
+                                                ? () {
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'कृपया आधी निवडलेल्या सदस्यांची उपस्थिती नोंदवा, त्यानंतर बैठक हॉल बदला.',
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }
+                                                : null,
+                                            child: AbsorbPointer(
+                                              absorbing:
+                                                  _hasPendingSelections &&
+                                                  _useGlobalSearchList,
+                                              child: DropdownButtonFormField<String>(
+                                                value:
+                                                    _selectedBaithakSessionLabel,
+                                                menuMaxHeight: 300,
+                                                isExpanded: true,
+                                                // DropdownButtonFormField's own isDense
+                                                // (separate from the isDense inside
+                                                // decoration below) defaults to true,
+                                                // which clamps the CLOSED/selected-value
+                                                // display to a fixed single-line height
+                                                // no matter what — cutting off a wrapped
+                                                // 2nd line regardless of padding. false
+                                                // lets the closed field grow to fit the
+                                                // actual selected text.
+                                                isDense: false,
+                                                // Null instead of the default fixed
+                                                // 48px row height, so long hall names
+                                                // wrap onto multiple lines (both in the
+                                                // closed field and the open menu)
+                                                // instead of being clipped/ellipsized.
+                                                itemHeight: null,
+                                                hint: Text('बैठक हॉल निवडा'),
+                                                items: [
+                                                  ..._visibleBaithakSessions.map(
+                                                    (
+                                                      session,
+                                                    ) => DropdownMenuItem(
+                                                      value:
+                                                          session['Session_mr']
+                                                              as String,
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              vertical: 6,
+                                                            ),
+                                                        child: Text(
+                                                          AttendanceSupport.sessionLabel(
+                                                            session,
+                                                          ),
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 12,
+                                                              ),
+                                                          softWrap: true,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                                onChanged: (value) async {
+                                                  final session =
+                                                      _visibleBaithakSessions
+                                                          .firstWhere(
+                                                            (s) =>
+                                                                s['Session_mr'] ==
+                                                                value,
+                                                            orElse: () => {},
+                                                          );
+                                                  setState(() {
+                                                    _selectedBaithakSessionLabel =
+                                                        value;
+                                                    _selectedBaithakHallMr =
+                                                        session['Hall_mr']
+                                                            as String?;
+                                                    _selectedBaithakDayMr =
+                                                        session['Day_mr']
+                                                            as String?;
+                                                    _useGlobalSearchList =
+                                                        false;
+                                                  });
+                                                  await _fetchHallDayUsers();
+                                                  await FirebaseConfig.logEvent(
+                                                    eventType:
+                                                        'attendance_baithak_hall_changed',
+                                                    description:
+                                                        'Attendance baithak hall changed',
+                                                    userId: loggedInMobile,
+                                                    details: {
+                                                      'baithakSession': value,
+                                                    },
+                                                  );
+                                                },
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'बैठक हॉल',
+                                                      border:
+                                                          OutlineInputBorder(),
+                                                      isDense: true,
+                                                      contentPadding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 6,
+                                                          ),
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 8),
+                                        ],
                                       ),
                                     ),
-                                  ],
+                                  ),
+                                  Expanded(
+                                    child: RefreshIndicator(
+                                      onRefresh: () async {
+                                        await FirebaseConfig.logEvent(
+                                          eventType: 'attendance_pull_refresh',
+                                          description:
+                                              'Attendance pull to refresh',
+                                          userId: loggedInMobile,
+                                        );
+                                        final topics =
+                                            await AttendanceSupport.fetchTopics(
+                                              _secondaryFirestore,
+                                            );
+                                        setState(() {
+                                          _topics = topics;
+                                          _isLoading = false;
+                                        });
+                                        await _refreshDisplayUsers();
+                                      },
+                                      child: _buildUserListSection(),
+                                    ),
+                                  ),
                                 ],
-                              ),
-                              SizedBox(height: 8),
-                              // Selections made from the baithak-hall list must be marked
-                              // (which clears _selectedUsers) before switching to the
-                              // cross-zone search — mixing sources mid-selection would let
-                              // an admin lose track of who they'd already picked.
-                              GestureDetector(
-                                onTap:
-                                    (_hasPendingSelections &&
-                                        !_useGlobalSearchList)
-                                    ? () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'कृपया आधी निवडलेल्या सदस्यांची उपस्थिती नोंदवा, त्यानंतर शोधा.',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    : null,
-                                child: AbsorbPointer(
-                                  absorbing:
-                                      _hasPendingSelections &&
-                                      !_useGlobalSearchList,
-                                  child: TextField(
-                                    controller: _globalSearchController,
-                                    style: const TextStyle(fontSize: 13),
-                                    decoration: const InputDecoration(
-                                      labelText:
-                                          'दुसऱ्या झोन मधील श्री सदस्य शोधा',
-                                      labelStyle: TextStyle(fontSize: 12),
-                                      border: OutlineInputBorder(),
-                                      prefixIcon: Icon(
-                                        Icons.person_search,
-                                        size: 18,
-                                      ),
-                                      // Same fixed 48x48 prefixIcon
-                                      // tap-target issue as the user-name
-                                      // search field above.
-                                      prefixIconConstraints: BoxConstraints(
-                                        minWidth: 32,
-                                        minHeight: 32,
-                                      ),
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 2,
-                                      ),
-                                    ),
-                                    onChanged: _searchAllUsers,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              // Same rule in reverse — selections made from a cross-zone
-                              // search must be marked before switching the baithak hall.
-                              GestureDetector(
-                                onTap:
-                                    (_hasPendingSelections &&
-                                        _useGlobalSearchList)
-                                    ? () {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'कृपया आधी निवडलेल्या सदस्यांची उपस्थिती नोंदवा, त्यानंतर बैठक हॉल बदला.',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    : null,
-                                child: AbsorbPointer(
-                                  absorbing:
-                                      _hasPendingSelections &&
-                                      _useGlobalSearchList,
-                                  child: DropdownButtonFormField<String>(
-                                    value: _selectedBaithakSessionLabel,
-                                    menuMaxHeight: 300,
-                                    isExpanded: true,
-                                    // DropdownButtonFormField's own isDense
-                                    // (separate from the isDense inside
-                                    // decoration below) defaults to true,
-                                    // which clamps the CLOSED/selected-value
-                                    // display to a fixed single-line height
-                                    // no matter what — cutting off a wrapped
-                                    // 2nd line regardless of padding. false
-                                    // lets the closed field grow to fit the
-                                    // actual selected text.
-                                    isDense: false,
-                                    // Null instead of the default fixed
-                                    // 48px row height, so long hall names
-                                    // wrap onto multiple lines (both in the
-                                    // closed field and the open menu)
-                                    // instead of being clipped/ellipsized.
-                                    itemHeight: null,
-                                    hint: Text('बैठक हॉल निवडा'),
-                                    items: [
-                                      ..._visibleBaithakSessions.map(
-                                        (session) => DropdownMenuItem(
-                                          value:
-                                              session['Session_mr'] as String,
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 6,
-                                            ),
-                                            child: Text(
-                                              AttendanceSupport.sessionLabel(
-                                                session,
-                                              ),
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                              ),
-                                              softWrap: true,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                    onChanged: (value) async {
-                                      final session = _visibleBaithakSessions
-                                          .firstWhere(
-                                            (s) => s['Session_mr'] == value,
-                                            orElse: () => {},
-                                          );
-                                      setState(() {
-                                        _selectedBaithakSessionLabel = value;
-                                        _selectedBaithakHallMr =
-                                            session['Hall_mr'] as String?;
-                                        _selectedBaithakDayMr =
-                                            session['Day_mr'] as String?;
-                                        _useGlobalSearchList = false;
-                                      });
-                                      await _fetchHallDayUsers();
-                                      await FirebaseConfig.logEvent(
-                                        eventType:
-                                            'attendance_baithak_hall_changed',
-                                        description:
-                                            'Attendance baithak hall changed',
-                                        userId: loggedInMobile,
-                                        details: {'baithakSession': value},
-                                      );
-                                    },
-                                    decoration: const InputDecoration(
-                                      labelText: 'बैठक हॉल',
-                                      border: OutlineInputBorder(),
-                                      isDense: true,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Expanded(
-                                child: RefreshIndicator(
-                                  onRefresh: () async {
-                                    await FirebaseConfig.logEvent(
-                                      eventType: 'attendance_pull_refresh',
-                                      description: 'Attendance pull to refresh',
-                                      userId: loggedInMobile,
-                                    );
-                                    final topics =
-                                        await AttendanceSupport.fetchTopics(
-                                          _secondaryFirestore,
-                                        );
-                                    setState(() {
-                                      _topics = topics;
-                                      _isLoading = false;
-                                    });
-                                    await _refreshDisplayUsers();
-                                  },
-                                  child: _buildUserListSection(),
-                                ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                   ),
                   SizedBox(width: 16),
@@ -2152,252 +2486,6 @@ class _AttendancePageState extends State<AttendancePage> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            Expanded(
-              child: SizedBox(
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await FirebaseConfig.logEvent(
-                      eventType: 'attendance_mark_clicked',
-                      description: 'Attendance mark clicked',
-                      userId: loggedInMobile,
-                      details: {
-                        'selectedUsers': _selectedUsers.length,
-                        'topics': _selectedTopics,
-                        'place': _places.firstWhere(
-                          (p) => p['placeName'] == _selectedPlace,
-                          orElse: () => <String, dynamic>{
-                            'locationEn': _selectedPlace ?? '',
-                          },
-                        )['locationEn'],
-                      },
-                    );
-                    if (_selectedTopics.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('कृपया किमान एक कामाचे स्वरूप निवडा'),
-                        ),
-                      );
-                      return;
-                    }
-                    if (_selectedPlace == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('कृपया ठिकाण निवडा')),
-                      );
-                      return;
-                    }
-                    if (_selectedPlace == _umbarliPlaceName &&
-                        (_selectedZone == null || _selectedZone!.isEmpty)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('कृपया झोन निवडा')),
-                      );
-                      return;
-                    }
-                    if (_selectedUsers.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('कृपया किमान एक वापरकर्ता निवडा'),
-                        ),
-                      );
-                      return;
-                    }
-
-                    final selectedPlaceData = _places.firstWhere(
-                      (p) => p['placeName'] == _selectedPlace,
-                      orElse: () => <String, dynamic>{
-                        'locationEn': _selectedPlace ?? '',
-                        'locationMr': _selectedPlace ?? '',
-                      },
-                    );
-                    try {
-                      int addedCount = 0;
-                      int duplicateCount = 0;
-                      String duplicateNames = '';
-                      final monthKey = AttendanceSupport.monthYearKey(
-                        _selectedDate,
-                      );
-                      for (final user in _selectedUsers) {
-                        final dateKey =
-                            '${_selectedDate.year.toString().padLeft(4, '0')}${_selectedDate.month.toString().padLeft(2, '0')}${_selectedDate.day.toString().padLeft(2, '0')}';
-                        final invertedDate = 99999999 - int.parse(dateKey);
-                        // Zone recorded on the attendance doc is the zone the
-                        // work actually happened in today (from the dropdown
-                        // above, or the admin's own zone for non-admins), not
-                        // the marked user's registered home zone — a user
-                        // can work in a zone other than their own. Format
-                        // isn't guaranteed here (dropdown is Marathi, a
-                        // non-admin's own zone field is usually English), so
-                        // normalize both ways rather than assume one.
-                        final selectedZone = _selectedZone ?? '';
-                        // docId includes the zone key so the same person can
-                        // have one record per zone per day, and so it lands
-                        // in the same invertedDate_uid_zoneKey scheme already
-                        // used by historical sevakdb-migrated attendance
-                        // (functions/migration_lib.js) — a plain
-                        // invertedDate_uid docId would silently miss those
-                        // existing records in the duplicate check below.
-                        final zoneKey = AttendanceSupport.zoneKey(
-                          AttendanceSupport.toEnglishZoneLabel(selectedZone),
-                        );
-                        final docId = '${invertedDate}_${user['uid']}_$zoneKey';
-                        final docRef = _secondaryFirestore!
-                            .collection('Attendance')
-                            .doc(monthKey)
-                            .collection('records')
-                            .doc(docId);
-                        final existing = await docRef.get();
-                        if (existing.exists) {
-                          duplicateCount++;
-                          final duplicateDisplayName =
-                              (user['name_mr'] ?? '').toString().isNotEmpty
-                              ? user['name_mr']
-                              : TransliterationService.toDevanagari(
-                                  (user['name'] ?? '').toString(),
-                                );
-                          duplicateNames += '$duplicateDisplayName, ';
-                          print(
-                            'Duplicate attendance for ${user['name']} on ${_selectedDate.toLocal().toString().split(' ')[0]}',
-                          );
-                          continue;
-                        }
-                        final userName = (user['name'] ?? '').toString();
-                        final userNameMr = (user['name_mr'] ?? '').toString();
-                        final recordData = {
-                          'date': Timestamp.fromDate(_selectedDate),
-                          'time': DateTime.now().toLocal().toString().split(
-                            ' ',
-                          )[1],
-                          'status': 'Present',
-                          'Topic': _selectedTopics.join(', '),
-                          'work_hours': _workHoursController.text.trim(),
-                          'Location_En': selectedPlaceData['locationEn'] ?? '',
-                          'Location_Mr': selectedPlaceData['locationMr'] ?? '',
-                          'zone': AttendanceSupport.toEnglishZoneLabel(
-                            selectedZone,
-                          ),
-                          'zone_mr': AttendanceSupport.toMarathiZoneLabel(
-                            selectedZone,
-                          ),
-                          'name': user['name'],
-                          // name_mr is optional at registration — fall back to a
-                          // best-effort transliteration rather than leaving it blank.
-                          'name_mr': userNameMr.isNotEmpty
-                              ? userNameMr
-                              : TransliterationService.toDevanagari(userName),
-                          'userId': user['uid'],
-                          'mobile':
-                              MobileEncryptionService.encrypt(
-                                (user['mobile'] ?? '').toString(),
-                              ) ??
-                              user['mobile'],
-                          'baithak': user['baithak'] ?? '',
-                          'baithak_mr': user['baithak_mr'] ?? '',
-                          // Persisted (not just kept in-session) so the वार
-                          // column in "यादी डाउनलोड करा" can be rebuilt from
-                          // Firestore directly — needed for a download to
-                          // include marks from an earlier, separate visit,
-                          // not just this session's picks.
-                          'baithak_day': user['baithak_day'] ?? '',
-                          'baithak_day_mr': user['baithak_day_mr'] ?? '',
-                          'hajeri_kramank': user['hajeri_kramank'] ?? '',
-                          'markedBy_uid': _currentUserUid ?? '',
-                          'markedBy_name': _currentUserName ?? '',
-                          'markedBy_name_mr': _currentUserNameMr ?? '',
-                        };
-                        await docRef.set(recordData);
-                        print(
-                          'Attendance record added for ${user['name']}: $docId',
-                        );
-                        addedCount++;
-                      }
-                      String msg = '';
-                      // Kept separate from msg below — _errorMessage is
-                      // rendered as a permanent block above the member list
-                      // (not a transient SnackBar), so it only ever holds the
-                      // short count; the full already-marked name list would
-                      // grow that block and push the list out of view.
-                      String summaryMsg = '';
-                      if (addedCount > 0) {
-                        summaryMsg = '$addedCount वापरकर्त्यांची उपस्थिती नोंदवली.';
-                        msg += '$summaryMsg ';
-                        await FirebaseConfig.logEvent(
-                          eventType: 'attendance_marked',
-                          description: 'Attendance marked',
-                          isImportant: true,
-                          details: {
-                            'count': addedCount,
-                            'users': _selectedUsers
-                                .map((u) => u['name'])
-                                .toList(),
-                            'date': _selectedDate.toIso8601String(),
-                            'place': selectedPlaceData['locationEn'],
-                            'topics': _selectedTopics,
-                          },
-                        );
-                      }
-                      if (duplicateCount > 0) {
-                        msg +=
-                            'आधीच नोंदवलेले: ${duplicateNames.substring(0, duplicateNames.length - 2)}. ';
-                        await FirebaseConfig.logEvent(
-                          eventType: 'attendance_duplicate',
-                          description: 'Duplicate attendance entries',
-                          isImportant: true,
-                          details: {
-                            'count': duplicateCount,
-                            'names': duplicateNames,
-                            'date': _selectedDate.toIso8601String(),
-                          },
-                        );
-                      }
-                      setState(() {
-                        _errorMessage = summaryMsg.isEmpty ? null : summaryMsg;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            msg.isEmpty
-                                ? 'कोणतीही उपस्थिती नोंदवली नाही.'
-                                : msg,
-                          ),
-                        ),
-                      );
-                      setState(() {
-                        _selectedUsers = [];
-                      });
-                      // Without this, the just-marked rows stay stale
-                      // (missing green / unchecked) until the admin manually
-                      // refreshes or reopens the screen — this re-syncs
-                      // _alreadyMarkedDocIds immediately so they show
-                      // correctly right away.
-                      await _syncAlreadyMarkedForDate();
-                    } catch (e) {
-                      await FirebaseConfig.logEvent(
-                        eventType: 'attendance_error',
-                        description: 'Error marking attendance',
-                        details: {
-                          'error': e.toString(),
-                          'date': _selectedDate.toIso8601String(),
-                          'place': selectedPlaceData['locationEn'],
-                          'topics': _selectedTopics,
-                        },
-                      );
-                      print('Error marking attendance: $e');
-                      print('Stack trace: ${StackTrace.current}');
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('उपस्थिती नोंदवताना त्रुटी: $e'),
-                        ),
-                      );
-                    }
-                  },
-                  child: Text(
-                    'उपस्थिती नोंदवा',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 16),
             Expanded(
               child: SizedBox(
                 height: 48,
@@ -3610,6 +3698,11 @@ class _AddUserBottomSheetState extends State<_AddUserBottomSheet> {
       // Place is an exact lookup instead of a phonetic guess.
       await PlaceNameService.learn(baithakPlace, baithakMr);
 
+      // Otherwise the newly registered member wouldn't show up in any
+      // zone/hall/search list until AttendanceSupport's cached user list
+      // (shared across those three fetches) expires on its own TTL.
+      AttendanceSupport.invalidateMappedUsersCache();
+
       await FirebaseConfig.logEvent(
         eventType: 'register_success_from_attendance',
         description: 'User registered from attendance page',
@@ -4204,6 +4297,10 @@ class _ShreeSadasyaEditDialogState extends State<_ShreeSadasyaEditDialog> {
                 : '',
             'vehicles': VehicleEntry.toStored(_vehicles),
           });
+      // Otherwise this edit (e.g. the baithak_mr fix a hall-matching issue
+      // needs) wouldn't show up in any zone/hall/search list until
+      // AttendanceSupport's cached user list expires on its own TTL.
+      AttendanceSupport.invalidateMappedUsersCache();
       if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {

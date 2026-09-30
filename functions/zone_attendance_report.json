@@ -1,0 +1,569 @@
+{
+  "start": "2026-05-31T18:30:00.000Z",
+  "end": "2026-09-07T18:29:59.000Z",
+  "totalRecords": 1322,
+  "rows": [
+    {
+      "zone": "झोन 1",
+      "zoneEn": "Zone 1",
+      "recordedBaithakMr": "श्री. अनंता पाटील, कोळेगाव | श्री. श्याम पाटील, मल्हार बंगला",
+      "records": 23,
+      "distinctMembers": 22,
+      "distinctDays": 3,
+      "firstDate": "2026-07-26",
+      "lastDate": "2026-08-02"
+    },
+    {
+      "zone": "झोन 2",
+      "zoneEn": "Zone 2",
+      "recordedBaithakMr": "Shree Shyam Patil, Malhar",
+      "records": 51,
+      "distinctMembers": 21,
+      "distinctDays": 4,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 3",
+      "zoneEn": "Zone 3",
+      "recordedBaithakMr": "Shree Prakash Patil, Nandivali | Shree Ananta Patil, Kolegaon | श्री. अनंता पाटील, कोळेगाव",
+      "records": 7,
+      "distinctMembers": 4,
+      "distinctDays": 5,
+      "firstDate": "2026-06-03",
+      "lastDate": "2026-07-26"
+    },
+    {
+      "zone": "झोन 5",
+      "zoneEn": "Zone 5",
+      "recordedBaithakMr": "श्री. अनंता पाटील, कोळेगाव",
+      "records": 1,
+      "distinctMembers": 1,
+      "distinctDays": 1,
+      "firstDate": "2026-08-16",
+      "lastDate": "2026-08-16"
+    },
+    {
+      "zone": "झोन 6",
+      "zoneEn": "Zone 6",
+      "recordedBaithakMr": "Shree Prakash Patil, Nandivali | Shree Ananta Patil, Kolegaon | Shree Tanaji Patil, Bhopar | श्री. तानाजी पाटील, भोपर | श्री. प्रकाश पाटील, नांदिवली | श्री. तानाजी पाटील भोपर",
+      "records": 123,
+      "distinctMembers": 39,
+      "distinctDays": 9,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-29"
+    },
+    {
+      "zone": "Zone 7",
+      "zoneEn": "Zone 7",
+      "recordedBaithakMr": "Sonarpada | Kolegaon",
+      "records": 2,
+      "distinctMembers": 2,
+      "distinctDays": 1,
+      "firstDate": "2026-06-27",
+      "lastDate": "2026-06-27"
+    },
+    {
+      "zone": "झोन 7",
+      "zoneEn": "झोन 7",
+      "recordedBaithakMr": "Kolegaon | श्री. अनंता पाटील, कोळेगाव",
+      "records": 3,
+      "distinctMembers": 3,
+      "distinctDays": 2,
+      "firstDate": "2026-06-27",
+      "lastDate": "2026-07-29"
+    },
+    {
+      "zone": "Zone7",
+      "zoneEn": "Zone7",
+      "recordedBaithakMr": "(blank)",
+      "records": 1,
+      "distinctMembers": 1,
+      "distinctDays": 1,
+      "firstDate": "2026-06-16",
+      "lastDate": "2026-06-16"
+    },
+    {
+      "zone": "झोन 8",
+      "zoneEn": "Zone 8",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon",
+      "records": 49,
+      "distinctMembers": 27,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 11",
+      "zoneEn": "Zone 11",
+      "recordedBaithakMr": "Shree Bhushan Mhatre, Patharli | श्री. भूषण म्हात्रे, पाथर्ली",
+      "records": 24,
+      "distinctMembers": 12,
+      "distinctDays": 6,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-16"
+    },
+    {
+      "zone": "झोन 12",
+      "zoneEn": "Zone 12",
+      "recordedBaithakMr": "Shree Bhushan Mhatre, Patharli | श्री. भूषण म्हात्रे, पाथर्ली | श्री. हरिश्चंद्र पाटील, आजदेपाडा | श्री. भूषण म्हात्रे पाथर्ली",
+      "records": 25,
+      "distinctMembers": 13,
+      "distinctDays": 5,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-16"
+    },
+    {
+      "zone": "झोन 13",
+      "zoneEn": "Zone 13",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon",
+      "records": 26,
+      "distinctMembers": 15,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 15",
+      "zoneEn": "Zone 15",
+      "recordedBaithakMr": "Shree Arun Madhavi, Agasan | Shree Praveen Mhatre, Dativali",
+      "records": 24,
+      "distinctMembers": 24,
+      "distinctDays": 1,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-06"
+    },
+    {
+      "zone": "झोन 19",
+      "zoneEn": "Zone 19",
+      "recordedBaithakMr": "Shree Mohan Salvi, Mumbra | Shree Prakash Patil, Nandivali | Shree Shankar Shelar, Khambalpada | Shree Ananta Patil, Kolegaon",
+      "records": 61,
+      "distinctMembers": 46,
+      "distinctDays": 2,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-13"
+    },
+    {
+      "zone": "झोन 23",
+      "zoneEn": "Zone 23",
+      "recordedBaithakMr": "Shree Lahu Farad, Khoni | श्री. लहु फराड, खोणी",
+      "records": 13,
+      "distinctMembers": 10,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-02"
+    },
+    {
+      "zone": "झोन 24",
+      "zoneEn": "Zone 24",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon | Shree Siddharth Mhatre, Sonar Pada",
+      "records": 53,
+      "distinctMembers": 27,
+      "distinctDays": 5,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 25",
+      "zoneEn": "Zone 25",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon | श्री. अनंता पाटील, कोळेगाव",
+      "records": 79,
+      "distinctMembers": 13,
+      "distinctDays": 8,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-22"
+    },
+    {
+      "zone": "झोन 28",
+      "zoneEn": "Zone 28",
+      "recordedBaithakMr": "भंडार्ली",
+      "records": 3,
+      "distinctMembers": 3,
+      "distinctDays": 1,
+      "firstDate": "2026-08-30",
+      "lastDate": "2026-08-30"
+    },
+    {
+      "zone": "झोन 29",
+      "zoneEn": "Zone 29",
+      "recordedBaithakMr": "Shree Chandar Mhatre, Dayghar",
+      "records": 62,
+      "distinctMembers": 30,
+      "distinctDays": 6,
+      "firstDate": "2026-06-02",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 31",
+      "zoneEn": "Zone 31",
+      "recordedBaithakMr": "Shree Harishchandra Patil, Aajdepada | Shree Siddharth Mhatre, Sonar Pada | श्री. हरिश्चंद्र पाटील, आजदेपाडा | श्री. हरिश्चंद्र पाटील आजदेपाडा",
+      "records": 103,
+      "distinctMembers": 29,
+      "distinctDays": 8,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-09-06"
+    },
+    {
+      "zone": "झोन 32",
+      "zoneEn": "Zone 32",
+      "recordedBaithakMr": "Shree Bhaskar Gaikar, Golavli | श्री. भास्कर गायकर, गोळवली | श्री. प्रकाश पाटील, नांदिवली",
+      "records": 85,
+      "distinctMembers": 17,
+      "distinctDays": 10,
+      "firstDate": "2026-06-05",
+      "lastDate": "2026-08-30"
+    },
+    {
+      "zone": "झोन 33",
+      "zoneEn": "Zone 33",
+      "recordedBaithakMr": "Shree Damu Thakre, Dawdi | Shree Siddharth Mhatre, Sonar Pada | श्री. दामू ठाकरे, दावडी",
+      "records": 59,
+      "distinctMembers": 19,
+      "distinctDays": 11,
+      "firstDate": "2026-06-04",
+      "lastDate": "2026-09-05"
+    },
+    {
+      "zone": "झोन 34",
+      "zoneEn": "Zone 34",
+      "recordedBaithakMr": "Shree Shankar Shelar, Khambalpada | Shree Prakash Patil, Nandivali | Shree Ananta Patil, Kolegaon | Shree Bharat Mhaskar, Mhaskarwada | श्री. भूषण म्हात्रे, पाथर्ली | श्री. अनंता पाटील, कोळेगाव",
+      "records": 51,
+      "distinctMembers": 39,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-07-30"
+    },
+    {
+      "zone": "झोन 35",
+      "zoneEn": "Zone 35",
+      "recordedBaithakMr": "Shree Shankar Shelar, Khambalpada | Shree Ananta Patil, Kolegaon | Shree Prakash Patil, Nandivali | Shree Bharat Mhaskar, Mhaskarwada",
+      "records": 34,
+      "distinctMembers": 24,
+      "distinctDays": 2,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-13"
+    },
+    {
+      "zone": "झोन 39",
+      "zoneEn": "Zone 39",
+      "recordedBaithakMr": "Shree Sandesh More, Gavdevi Mandir (W) | श्री. संदेश मोरे गावदेवी मंदिर (प.) | श्री. रमेश पाटील, देवीचा पाडा",
+      "records": 105,
+      "distinctMembers": 33,
+      "distinctDays": 10,
+      "firstDate": "2026-06-05",
+      "lastDate": "2026-08-22"
+    },
+    {
+      "zone": "झोन 40",
+      "zoneEn": "Zone 40",
+      "recordedBaithakMr": "Shree Omkar Bhoir, Mothagaon | Shree Shyam Patil, Malhar",
+      "records": 16,
+      "distinctMembers": 10,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 42",
+      "zoneEn": "Zone 42",
+      "recordedBaithakMr": "Shree Praveen Ra. Mhatre, Kopar | Shree Rajendra Salvi, Mulund East | Ahilyabai Vidyamandir, Kalachowki Chinchpokli | Shree Prakash Patil, Nandivali | Shree Shyam Patil, Malhar",
+      "records": 119,
+      "distinctMembers": 63,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "वनौषधी विभाग",
+      "zoneEn": "वनौषधी विभाग",
+      "recordedBaithakMr": "Shree Chandar Mhatre, Dayghar | श्री. प्रकाश पाटील, नांदिवली",
+      "records": 25,
+      "distinctMembers": 15,
+      "distinctDays": 8,
+      "firstDate": "2026-06-01",
+      "lastDate": "2026-09-05"
+    },
+    {
+      "zone": "(no zone)",
+      "zoneEn": "",
+      "recordedBaithakMr": "Shree Prakash Patil, Nandivali | Shree Siddharth Mhatre, Sonar Pada | Shree Tanaji Patil, Bhopar | श्री. प्रकाश पाटील, नांदिवली | श्री. सिद्धार्थ म्हात्रे, सोनारपाडा | श्री. अनंता पाटील, कोळेगाव",
+      "records": 95,
+      "distinctMembers": 18,
+      "distinctDays": 22,
+      "firstDate": "2026-06-03",
+      "lastDate": "2026-08-29"
+    }
+  ],
+  "normalized": [
+    {
+      "zone": "झोन 1",
+      "recordedBaithakMr": "श्री. अनंता पाटील, कोळेगाव | श्री. श्याम पाटील, मल्हार बंगला",
+      "registeredBaithakHalls": "श्री. श्याम पाटील मल्हार बंगला, शुक्रवार | श्री. श्याम पाटील मल्हार बंगला, सोमवार",
+      "records": 23,
+      "distinctMembers": 22,
+      "distinctDays": 3,
+      "firstDate": "2026-07-26",
+      "lastDate": "2026-08-02"
+    },
+    {
+      "zone": "झोन 2",
+      "recordedBaithakMr": "Shree Shyam Patil, Malhar",
+      "registeredBaithakHalls": "श्री. श्याम पाटील मल्हार बंगला, बुधवार",
+      "records": 51,
+      "distinctMembers": 21,
+      "distinctDays": 4,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 3",
+      "recordedBaithakMr": "Shree Prakash Patil, Nandivali | Shree Ananta Patil, Kolegaon | श्री. अनंता पाटील, कोळेगाव",
+      "registeredBaithakHalls": "श्री. तानाजी पाटील भोपर, गुरुवार | श्री. प्रकाश पाटील नांदिवली, गुरुवार | श्री. प्रकाश पाटील नांदिवली, मंगळवार | श्री. प्रकाश पाटील नांदिवली, रविवार",
+      "records": 7,
+      "distinctMembers": 4,
+      "distinctDays": 5,
+      "firstDate": "2026-06-03",
+      "lastDate": "2026-07-26"
+    },
+    {
+      "zone": "झोन 5",
+      "recordedBaithakMr": "श्री. अनंता पाटील, कोळेगाव",
+      "registeredBaithakHalls": "श्री. अनंता पाटील कोळेगाव, मंगळवार",
+      "records": 1,
+      "distinctMembers": 1,
+      "distinctDays": 1,
+      "firstDate": "2026-08-16",
+      "lastDate": "2026-08-16"
+    },
+    {
+      "zone": "झोन 6",
+      "recordedBaithakMr": "Shree Prakash Patil, Nandivali | Shree Ananta Patil, Kolegaon | Shree Tanaji Patil, Bhopar | श्री. तानाजी पाटील, भोपर | श्री. प्रकाश पाटील, नांदिवली | श्री. तानाजी पाटील भोपर",
+      "registeredBaithakHalls": "श्री. तानाजी पाटील भोपर, गुरुवार (झोन 6) | श्री. प्रकाश पाटील नांदिवली, गुरुवार (झोन 6) | श्री. प्रकाश पाटील नांदिवली, मंगळवार (झोन 6) | श्री. प्रकाश पाटील नांदिवली, रविवार (झोन 6)",
+      "records": 123,
+      "distinctMembers": 39,
+      "distinctDays": 9,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-29"
+    },
+    {
+      "zone": "Zone 7 / झोन 7 / Zone7",
+      "recordedBaithakMr": "Sonarpada | Kolegaon | श्री. अनंता पाटील, कोळेगाव",
+      "registeredBaithakHalls": "श्री. तानाजी पाटील भोपर, गुरुवार (झोन 7) | श्री. प्रकाश पाटील नांदिवली, गुरुवार (झोन 7) | श्री. प्रकाश पाटील नांदिवली, मंगळवार (झोन 7) | श्री. प्रकाश पाटील नांदिवली, रविवार (झोन 7)",
+      "records": 6,
+      "distinctMembers": 5,
+      "distinctDays": 3,
+      "firstDate": "2026-06-16",
+      "lastDate": "2026-07-29"
+    },
+    {
+      "zone": "झोन 8",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon",
+      "registeredBaithakHalls": "श्री. अनंता पाटील कोळेगाव, बुधवार | श्री. अनंता पाटील कोळेगाव, शुक्रवार",
+      "records": 49,
+      "distinctMembers": 27,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 11",
+      "recordedBaithakMr": "Shree Bhushan Mhatre, Patharli | श्री. भूषण म्हात्रे, पाथर्ली",
+      "registeredBaithakHalls": "श्री. भूषण म्हात्रे पाथर्ली, मंगळवार | श्री. भूषण म्हात्रे पाथर्ली, सोमवार",
+      "records": 24,
+      "distinctMembers": 12,
+      "distinctDays": 6,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-16"
+    },
+    {
+      "zone": "झोन 12",
+      "recordedBaithakMr": "Shree Bhushan Mhatre, Patharli | श्री. भूषण म्हात्रे, पाथर्ली | श्री. हरिश्चंद्र पाटील, आजदेपाडा | श्री. भूषण म्हात्रे पाथर्ली",
+      "registeredBaithakHalls": "श्री. भूषण म्हात्रे पाथर्ली, मंगळवार (झोन 12) | श्री. भूषण म्हात्रे पाथर्ली, सोमवार (झोन 12)",
+      "records": 25,
+      "distinctMembers": 13,
+      "distinctDays": 5,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-16"
+    },
+    {
+      "zone": "झोन 13",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon",
+      "registeredBaithakHalls": "श्री. अनंता पाटील कोळेगाव, बुधवार (झोन 13) | श्री. अनंता पाटील कोळेगाव, शुक्रवार (झोन 13)",
+      "records": 26,
+      "distinctMembers": 15,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 15",
+      "recordedBaithakMr": "Shree Arun Madhavi, Agasan | Shree Praveen Mhatre, Dativali",
+      "registeredBaithakHalls": "श्री. अरुण मढवी आगासन, बुधवार | श्री. प्रवीण म्हात्रे दातिवली, शुक्रवार",
+      "records": 24,
+      "distinctMembers": 24,
+      "distinctDays": 1,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-06"
+    },
+    {
+      "zone": "झोन 19",
+      "recordedBaithakMr": "Shree Mohan Salvi, Mumbra | Shree Prakash Patil, Nandivali | Shree Shankar Shelar, Khambalpada | Shree Ananta Patil, Kolegaon",
+      "registeredBaithakHalls": "श्री. मोहन साळवी मुंब्रा, बुधवार | श्री. मोहन साळवी मुंब्रा, शुक्रवार",
+      "records": 61,
+      "distinctMembers": 46,
+      "distinctDays": 2,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-13"
+    },
+    {
+      "zone": "झोन 23",
+      "recordedBaithakMr": "Shree Lahu Farad, Khoni | श्री. लहु फराड, खोणी",
+      "registeredBaithakHalls": "श्री. लहु फराड खोणी, बुधवार",
+      "records": 13,
+      "distinctMembers": 10,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-02"
+    },
+    {
+      "zone": "झोन 24",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon | Shree Siddharth Mhatre, Sonar Pada",
+      "registeredBaithakHalls": "श्री. अनंता पाटील कोळेगाव, गुरुवार | श्री. अनंता पाटील कोळेगाव, बुधवार (झोन 24) | श्री. अनंता पाटील कोळेगाव, शुक्रवार (झोन 24)",
+      "records": 53,
+      "distinctMembers": 27,
+      "distinctDays": 5,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 25",
+      "recordedBaithakMr": "Shree Ananta Patil, Kolegaon | श्री. अनंता पाटील, कोळेगाव",
+      "registeredBaithakHalls": "श्री. अनंता पाटील कोळेगाव, गुरुवार (झोन 25)",
+      "records": 79,
+      "distinctMembers": 13,
+      "distinctDays": 8,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-08-22"
+    },
+    {
+      "zone": "झोन 28",
+      "recordedBaithakMr": "भंडार्ली",
+      "registeredBaithakHalls": "भंडार्ली, मंगळवार",
+      "records": 3,
+      "distinctMembers": 3,
+      "distinctDays": 1,
+      "firstDate": "2026-08-30",
+      "lastDate": "2026-08-30"
+    },
+    {
+      "zone": "झोन 29",
+      "recordedBaithakMr": "Shree Chandar Mhatre, Dayghar",
+      "registeredBaithakHalls": "श्री. चंदर म्हात्रे डायघर, मंगळवार",
+      "records": 62,
+      "distinctMembers": 30,
+      "distinctDays": 6,
+      "firstDate": "2026-06-02",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 31",
+      "recordedBaithakMr": "Shree Harishchandra Patil, Aajdepada | Shree Siddharth Mhatre, Sonar Pada | श्री. हरिश्चंद्र पाटील, आजदेपाडा | श्री. हरिश्चंद्र पाटील आजदेपाडा",
+      "registeredBaithakHalls": "श्री. हरिश्चंद्र पाटील आजदेपदा, मंगळवार",
+      "records": 103,
+      "distinctMembers": 29,
+      "distinctDays": 8,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-09-06"
+    },
+    {
+      "zone": "झोन 32",
+      "recordedBaithakMr": "Shree Bhaskar Gaikar, Golavli | श्री. भास्कर गायकर, गोळवली | श्री. प्रकाश पाटील, नांदिवली",
+      "registeredBaithakHalls": "श्री. भास्कर गायकर गोळवली, गुरुवार",
+      "records": 85,
+      "distinctMembers": 17,
+      "distinctDays": 10,
+      "firstDate": "2026-06-05",
+      "lastDate": "2026-08-30"
+    },
+    {
+      "zone": "झोन 33",
+      "recordedBaithakMr": "Shree Damu Thakre, Dawdi | Shree Siddharth Mhatre, Sonar Pada | श्री. दामू ठाकरे, दावडी",
+      "registeredBaithakHalls": "श्री. दामू ठाकरे दावडी, गुरुवार",
+      "records": 59,
+      "distinctMembers": 19,
+      "distinctDays": 11,
+      "firstDate": "2026-06-04",
+      "lastDate": "2026-09-05"
+    },
+    {
+      "zone": "झोन 34",
+      "recordedBaithakMr": "Shree Shankar Shelar, Khambalpada | Shree Prakash Patil, Nandivali | Shree Ananta Patil, Kolegaon | Shree Bharat Mhaskar, Mhaskarwada | श्री. भूषण म्हात्रे, पाथर्ली | श्री. अनंता पाटील, कोळेगाव",
+      "registeredBaithakHalls": "श्री. भरत म्हसकर म्हास्करवाडा, मंगळवार | श्री. शंकर शेलार खंबाळपाडा, गुरुवार",
+      "records": 51,
+      "distinctMembers": 39,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-07-30"
+    },
+    {
+      "zone": "झोन 35",
+      "recordedBaithakMr": "Shree Shankar Shelar, Khambalpada | Shree Ananta Patil, Kolegaon | Shree Prakash Patil, Nandivali | Shree Bharat Mhaskar, Mhaskarwada",
+      "registeredBaithakHalls": "श्री. भरत म्हसकर म्हास्करवाडा, मंगळवार (झोन 35) | श्री. शंकर शेलार खंबाळपाडा, गुरुवार (झोन 35)",
+      "records": 34,
+      "distinctMembers": 24,
+      "distinctDays": 2,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-13"
+    },
+    {
+      "zone": "झोन 39",
+      "recordedBaithakMr": "Shree Sandesh More, Gavdevi Mandir (W) | श्री. संदेश मोरे गावदेवी मंदिर (प.) | श्री. रमेश पाटील, देवीचा पाडा",
+      "registeredBaithakHalls": "श्री. संदेश मोरे गावदेवी मंदिर (प.), बुधवार",
+      "records": 105,
+      "distinctMembers": 33,
+      "distinctDays": 10,
+      "firstDate": "2026-06-05",
+      "lastDate": "2026-08-22"
+    },
+    {
+      "zone": "झोन 40",
+      "recordedBaithakMr": "Shree Omkar Bhoir, Mothagaon | Shree Shyam Patil, Malhar",
+      "registeredBaithakHalls": "श्री. ओमकार भोईर मोठागाव, सोमवार (झोन 40)",
+      "records": 16,
+      "distinctMembers": 10,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "झोन 42",
+      "recordedBaithakMr": "Shree Praveen Ra. Mhatre, Kopar | Shree Rajendra Salvi, Mulund East | Ahilyabai Vidyamandir, Kalachowki Chinchpokli | Shree Prakash Patil, Nandivali | Shree Shyam Patil, Malhar",
+      "registeredBaithakHalls": "अहिल्याबाई विद्यामंदिर, काळाचौकी चिंचपोकळी, बुधवार | श्री. प्रवीण रा. म्हात्रे कोपर, गुरुवार | श्री. प्रवीण रा. म्हात्रे कोपर, सोमवार | श्री. राजेंद्र साळवी, मुलुंड ईस्ट, मंगळवार",
+      "records": 119,
+      "distinctMembers": 63,
+      "distinctDays": 3,
+      "firstDate": "2026-06-06",
+      "lastDate": "2026-06-20"
+    },
+    {
+      "zone": "वनौषधी विभाग",
+      "recordedBaithakMr": "Shree Chandar Mhatre, Dayghar | श्री. प्रकाश पाटील, नांदिवली",
+      "registeredBaithakHalls": "(no BaithakHalls entry)",
+      "records": 25,
+      "distinctMembers": 15,
+      "distinctDays": 8,
+      "firstDate": "2026-06-01",
+      "lastDate": "2026-09-05"
+    },
+    {
+      "zone": "(no zone)",
+      "recordedBaithakMr": "Shree Prakash Patil, Nandivali | Shree Siddharth Mhatre, Sonar Pada | Shree Tanaji Patil, Bhopar | श्री. प्रकाश पाटील, नांदिवली | श्री. सिद्धार्थ म्हात्रे, सोनारपाडा | श्री. अनंता पाटील, कोळेगाव",
+      "registeredBaithakHalls": "(no BaithakHalls entry)",
+      "records": 95,
+      "distinctMembers": 18,
+      "distinctDays": 22,
+      "firstDate": "2026-06-03",
+      "lastDate": "2026-08-29"
+    }
+  ]
+}

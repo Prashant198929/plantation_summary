@@ -546,6 +546,11 @@ class _LoginPageState extends State<LoginPage> {
                       },
                       child: const Text('पासवर्ड विसरलात?'),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'v$appVersionLabel',
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    ),
                   ],
                 ),
               ),

@@ -705,3 +705,670 @@
 [2026-07-06T09:05:43.843Z] ERROR: Fatal: Timed out after 45000ms: chunk 801 attempt 6
 [2026-07-06T09:05:43.845Z] === Migration run ended (fatal error) ===
 
+[2026-07-06T18:00:04] --- triggered by scheduled task ---
+[2026-07-06T12:30:05.286Z] === Migration run started ===
+[2026-07-06T12:30:05.300Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-06T12:30:55.282Z] Loaded 110798 total rows from source.
+[2026-07-06T12:30:55.284Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-06T12:31:02.120Z]   2078 existing user doc(s) indexed by uid.
+[2026-07-06T12:31:02.124Z] Resuming from checkpoint: offset 80000 (2054 users, 79890 attendance written so far, 110 skipped).
+[2026-07-06T12:31:47.162Z] ERROR:   chunk 801 attempt 1/6 failed: Timed out after 45000ms: chunk 801 attempt 1
+[2026-07-06T12:31:47.164Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T12:32:42.193Z] ERROR:   chunk 801 attempt 2/6 failed: Timed out after 45000ms: chunk 801 attempt 2
+[2026-07-06T12:32:42.196Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T12:33:47.217Z] ERROR:   chunk 801 attempt 3/6 failed: Timed out after 45000ms: chunk 801 attempt 3
+[2026-07-06T12:33:47.222Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T12:35:12.245Z] ERROR:   chunk 801 attempt 4/6 failed: Timed out after 45000ms: chunk 801 attempt 4
+[2026-07-06T12:35:12.249Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T12:36:57.277Z] ERROR:   chunk 801 attempt 5/6 failed: Timed out after 45000ms: chunk 801 attempt 5
+[2026-07-06T12:36:57.279Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-06T12:39:12.307Z] ERROR:   chunk 801 attempt 6/6 failed: Timed out after 45000ms: chunk 801 attempt 6
+[2026-07-06T12:39:12.311Z] ERROR: Fatal: Timed out after 45000ms: chunk 801 attempt 6
+[2026-07-06T12:39:12.315Z] === Migration run ended (fatal error) ===
+
+[2026-07-07T07:46:56.519Z] === Migration run started ===
+[2026-07-07T07:46:56.529Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-07T07:47:54.657Z] Loaded 110798 total rows from source.
+[2026-07-07T07:47:54.659Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-07T07:47:56.229Z]   2078 existing user doc(s) indexed by uid.
+[2026-07-07T07:47:56.231Z] Resuming from checkpoint: offset 80000 (2054 users, 79890 attendance written so far, 110 skipped).
+[2026-07-07T07:47:57.174Z] [801/1108] rows 80001-80100: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:47:57.991Z] [802/1108] rows 80101-80200: 84 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:47:58.731Z] [803/1108] rows 80201-80300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:47:59.553Z] [804/1108] rows 80301-80400: 93 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:00.316Z] [805/1108] rows 80401-80500: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:01.148Z] [806/1108] rows 80501-80600: 98 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:01.904Z] [807/1108] rows 80601-80700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:02.619Z] [808/1108] rows 80701-80800: 97 users (19 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:03.325Z] [809/1108] rows 80801-80900: 96 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:04.034Z] [810/1108] rows 80901-81000: 88 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:04.825Z] [811/1108] rows 81001-81100: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:05.511Z] [812/1108] rows 81101-81200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:06.176Z] [813/1108] rows 81201-81300: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:06.943Z] [814/1108] rows 81301-81400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:07.682Z] [815/1108] rows 81401-81500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:08.427Z] [816/1108] rows 81501-81600: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:09.151Z] [817/1108] rows 81601-81700: 82 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:09.868Z] [818/1108] rows 81701-81800: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:10.628Z] [819/1108] rows 81801-81900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:11.347Z] [820/1108] rows 81901-82000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:12.078Z] [821/1108] rows 82001-82100: 91 users (10 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:12.825Z] [822/1108] rows 82101-82200: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:13.660Z] [823/1108] rows 82201-82300: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:14.386Z] [824/1108] rows 82301-82400: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:15.075Z] [825/1108] rows 82401-82500: 89 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:15.799Z] [826/1108] rows 82501-82600: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:16.543Z] [827/1108] rows 82601-82700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:17.238Z] [828/1108] rows 82701-82800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:17.949Z] [829/1108] rows 82801-82900: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:18.707Z] [830/1108] rows 82901-83000: 94 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:19.487Z] [831/1108] rows 83001-83100: 95 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:20.177Z] [832/1108] rows 83101-83200: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:20.972Z] [833/1108] rows 83201-83300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:21.674Z] [834/1108] rows 83301-83400: 100 users (7 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:22.390Z] [835/1108] rows 83401-83500: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:23.066Z] [836/1108] rows 83501-83600: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:23.772Z] [837/1108] rows 83601-83700: 97 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:24.428Z] [838/1108] rows 83701-83800: 92 users (15 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:25.090Z] [839/1108] rows 83801-83900: 99 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:25.901Z] [840/1108] rows 83901-84000: 100 users (13 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:26.676Z] [841/1108] rows 84001-84100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:28.336Z]   Appended 1 new skipped row(s) (0 already recorded).
+[2026-07-07T07:48:28.338Z] [842/1108] rows 84101-84200: 98 users (0 new), 99 attendance written, 1 skipped-existing — verified OK
+[2026-07-07T07:48:29.170Z] [843/1108] rows 84201-84300: 93 users (14 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:29.858Z] [844/1108] rows 84301-84400: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:30.596Z] [845/1108] rows 84401-84500: 100 users (23 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:31.306Z] [846/1108] rows 84501-84600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:31.989Z] [847/1108] rows 84601-84700: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:32.644Z] [848/1108] rows 84701-84800: 91 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:33.327Z] [849/1108] rows 84801-84900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:33.983Z] [850/1108] rows 84901-85000: 100 users (10 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:34.650Z] [851/1108] rows 85001-85100: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:35.374Z] [852/1108] rows 85101-85200: 96 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:36.069Z] [853/1108] rows 85201-85300: 86 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:36.744Z] [854/1108] rows 85301-85400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:37.391Z] [855/1108] rows 85401-85500: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:38.139Z] [856/1108] rows 85501-85600: 100 users (7 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:38.858Z] [857/1108] rows 85601-85700: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:39.549Z] [858/1108] rows 85701-85800: 91 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:40.239Z] [859/1108] rows 85801-85900: 94 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:40.859Z] [860/1108] rows 85901-86000: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:41.509Z] [861/1108] rows 86001-86100: 96 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:42.138Z] [862/1108] rows 86101-86200: 90 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:42.887Z] [863/1108] rows 86201-86300: 100 users (8 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:43.600Z] [864/1108] rows 86301-86400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:44.330Z] [865/1108] rows 86401-86500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:45.147Z] [866/1108] rows 86501-86600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:45.870Z] [867/1108] rows 86601-86700: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:46.635Z] [868/1108] rows 86701-86800: 91 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:47.375Z] [869/1108] rows 86801-86900: 95 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:48.148Z] [870/1108] rows 86901-87000: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:48.923Z] [871/1108] rows 87001-87100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:49.560Z] [872/1108] rows 87101-87200: 98 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:50.276Z] [873/1108] rows 87201-87300: 98 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:50.990Z] [874/1108] rows 87301-87400: 97 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:51.619Z] [875/1108] rows 87401-87500: 86 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:52.497Z] [876/1108] rows 87501-87600: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:53.163Z] [877/1108] rows 87601-87700: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:53.851Z] [878/1108] rows 87701-87800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:54.570Z] [879/1108] rows 87801-87900: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:55.292Z] [880/1108] rows 87901-88000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:55.997Z] [881/1108] rows 88001-88100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:56.645Z] [882/1108] rows 88101-88200: 85 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:57.333Z] [883/1108] rows 88201-88300: 94 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:58.069Z] [884/1108] rows 88301-88400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:58.744Z] [885/1108] rows 88401-88500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:48:59.446Z] [886/1108] rows 88501-88600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:00.127Z] [887/1108] rows 88601-88700: 87 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:00.797Z] [888/1108] rows 88701-88800: 96 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:01.504Z] [889/1108] rows 88801-88900: 95 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:02.208Z] [890/1108] rows 88901-89000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:02.961Z] [891/1108] rows 89001-89100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:03.684Z] [892/1108] rows 89101-89200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:04.400Z] [893/1108] rows 89201-89300: 85 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:05.110Z] [894/1108] rows 89301-89400: 89 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:05.907Z] [895/1108] rows 89401-89500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:06.665Z] [896/1108] rows 89501-89600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:07.394Z] [897/1108] rows 89601-89700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:08.068Z] [898/1108] rows 89701-89800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:08.743Z] [899/1108] rows 89801-89900: 89 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:09.444Z] [900/1108] rows 89901-90000: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:10.107Z] [901/1108] rows 90001-90100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:10.930Z] [902/1108] rows 90101-90200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:11.658Z] [903/1108] rows 90201-90300: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:12.430Z] [904/1108] rows 90301-90400: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:13.148Z] [905/1108] rows 90401-90500: 93 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:13.852Z] [906/1108] rows 90501-90600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:14.518Z] [907/1108] rows 90601-90700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:15.236Z] [908/1108] rows 90701-90800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:16.076Z] [909/1108] rows 90801-90900: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:16.788Z] [910/1108] rows 90901-91000: 93 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:17.452Z] [911/1108] rows 91001-91100: 86 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:18.206Z] [912/1108] rows 91101-91200: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:18.926Z] [913/1108] rows 91201-91300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:19.631Z] [914/1108] rows 91301-91400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:20.369Z] [915/1108] rows 91401-91500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:21.188Z] [916/1108] rows 91501-91600: 85 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:21.971Z] [917/1108] rows 91601-91700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:22.930Z] [918/1108] rows 91701-91800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:23.625Z] [919/1108] rows 91801-91900: 79 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:24.425Z] [920/1108] rows 91901-92000: 96 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:25.363Z] [921/1108] rows 92001-92100: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:26.266Z] [922/1108] rows 92101-92200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:27.071Z] [923/1108] rows 92201-92300: 91 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:27.920Z] [924/1108] rows 92301-92400: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:28.738Z] [925/1108] rows 92401-92500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:29.586Z] [926/1108] rows 92501-92600: 97 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:30.339Z] [927/1108] rows 92601-92700: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:31.071Z] [928/1108] rows 92701-92800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:31.782Z] [929/1108] rows 92801-92900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:32.488Z] [930/1108] rows 92901-93000: 96 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:33.170Z] [931/1108] rows 93001-93100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:33.859Z] [932/1108] rows 93101-93200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:34.632Z] [933/1108] rows 93201-93300: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:35.323Z] [934/1108] rows 93301-93400: 93 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:36.023Z] [935/1108] rows 93401-93500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:36.668Z] [936/1108] rows 93501-93600: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:37.334Z] [937/1108] rows 93601-93700: 88 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:38.033Z] [938/1108] rows 93701-93800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:38.789Z] [939/1108] rows 93801-93900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:39.456Z] [940/1108] rows 93901-94000: 79 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:40.273Z] [941/1108] rows 94001-94100: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:41.047Z] [942/1108] rows 94101-94200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:41.818Z] [943/1108] rows 94201-94300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:42.542Z] [944/1108] rows 94301-94400: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:43.248Z] [945/1108] rows 94401-94500: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:43.908Z] [946/1108] rows 94501-94600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:44.582Z] [947/1108] rows 94601-94700: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:45.385Z] [948/1108] rows 94701-94800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:46.193Z] [949/1108] rows 94801-94900: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:46.989Z] [950/1108] rows 94901-95000: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:47.697Z] [951/1108] rows 95001-95100: 79 users (8 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:48.447Z] [952/1108] rows 95101-95200: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:49.226Z] [953/1108] rows 95201-95300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:49.966Z] [954/1108] rows 95301-95400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:50.658Z] [955/1108] rows 95401-95500: 98 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:51.448Z] [956/1108] rows 95501-95600: 94 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:52.236Z] [957/1108] rows 95601-95700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:53.011Z] [958/1108] rows 95701-95800: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:53.733Z] [959/1108] rows 95801-95900: 69 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:54.452Z] [960/1108] rows 95901-96000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:55.190Z] [961/1108] rows 96001-96100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:55.954Z] [962/1108] rows 96101-96200: 80 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:56.820Z] [963/1108] rows 96201-96300: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:57.585Z] [964/1108] rows 96301-96400: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:58.342Z] [965/1108] rows 96401-96500: 82 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:59.127Z] [966/1108] rows 96501-96600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:49:59.964Z] [967/1108] rows 96601-96700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:00.750Z] [968/1108] rows 96701-96800: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:01.560Z] [969/1108] rows 96801-96900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:02.456Z] [970/1108] rows 96901-97000: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:03.333Z] [971/1108] rows 97001-97100: 96 users (18 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:04.101Z] [972/1108] rows 97101-97200: 95 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:04.863Z] [973/1108] rows 97201-97300: 91 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:05.588Z] [974/1108] rows 97301-97400: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:06.367Z] [975/1108] rows 97401-97500: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:07.027Z] [976/1108] rows 97501-97600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:07.751Z] [977/1108] rows 97601-97700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:08.469Z] [978/1108] rows 97701-97800: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:09.194Z] [979/1108] rows 97801-97900: 99 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:09.909Z] [980/1108] rows 97901-98000: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:10.673Z] [981/1108] rows 98001-98100: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:11.434Z] [982/1108] rows 98101-98200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:12.122Z] [983/1108] rows 98201-98300: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:12.796Z] [984/1108] rows 98301-98400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:13.479Z] [985/1108] rows 98401-98500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:14.118Z] [986/1108] rows 98501-98600: 85 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:14.857Z] [987/1108] rows 98601-98700: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:15.589Z] [988/1108] rows 98701-98800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:16.246Z] [989/1108] rows 98801-98900: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:16.916Z] [990/1108] rows 98901-99000: 87 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:17.554Z] [991/1108] rows 99001-99100: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:18.278Z] [992/1108] rows 99101-99200: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:18.930Z] [993/1108] rows 99201-99300: 100 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:19.618Z] [994/1108] rows 99301-99400: 92 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:20.275Z] [995/1108] rows 99401-99500: 87 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:20.964Z] [996/1108] rows 99501-99600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:21.610Z] [997/1108] rows 99601-99700: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:22.275Z] [998/1108] rows 99701-99800: 90 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:22.969Z] [999/1108] rows 99801-99900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:50:23.651Z] [1000/1108] rows 99901-100000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-07T07:51:08.691Z] ERROR:   chunk 1001 attempt 1/6 failed: Timed out after 45000ms: chunk 1001 attempt 1
+[2026-07-07T07:51:08.693Z] ERROR:   backing off 10s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-07T07:52:03.722Z] ERROR:   chunk 1001 attempt 2/6 failed: Timed out after 45000ms: chunk 1001 attempt 2
+[2026-07-07T07:52:03.724Z] ERROR:   backing off 20s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-07T07:53:08.753Z] ERROR:   chunk 1001 attempt 3/6 failed: Timed out after 45000ms: chunk 1001 attempt 3
+[2026-07-07T07:53:08.755Z] ERROR:   backing off 40s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-07T07:54:33.794Z] ERROR:   chunk 1001 attempt 4/6 failed: Timed out after 45000ms: chunk 1001 attempt 4
+[2026-07-07T07:54:33.795Z] ERROR:   backing off 60s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-07T07:56:18.812Z] ERROR:   chunk 1001 attempt 5/6 failed: Timed out after 45000ms: chunk 1001 attempt 5
+[2026-07-07T07:56:18.814Z] ERROR:   backing off 90s before retrying (likely a write hotspot on new sequential doc IDs, should self-resolve)...
+[2026-07-07T07:58:33.837Z] ERROR:   chunk 1001 attempt 6/6 failed: Timed out after 45000ms: chunk 1001 attempt 6
+[2026-07-07T07:58:33.839Z] ERROR: Fatal: Timed out after 45000ms: chunk 1001 attempt 6
+[2026-07-07T07:58:33.841Z] === Migration run ended (fatal error) ===
+
+[2026-07-07T18:24:22] --- triggered by scheduled task ---
+[2026-07-07T12:54:24.108Z] === Migration run started ===
+[2026-07-07T12:54:24.138Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-07T12:55:21.076Z] Loaded 110798 total rows from source.
+[2026-07-07T12:55:21.078Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-07T12:55:22.390Z]   2540 existing user doc(s) indexed by uid.
+[2026-07-07T12:55:22.393Z] Resuming from checkpoint: offset 100000 (2516 users, 99889 attendance written so far, 111 skipped).
+=== Migration run started ===
+Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+Wrote 110798 rows to C:\Users\PSAWAR~1\AppData\Local\Temp\sevakdb_excel_full_1783503341713.json
+Loaded 110798 total rows from source.
+Loading existing users/{uid} map for idempotency (one-time read)...
+  2540 existing user doc(s) indexed by uid.
+Resuming from checkpoint: offset 100000 (2516 users, 99889 attendance written so far, 111 skipped).
+[1001/1108] rows 100001-100100: 77 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1002/1108] rows 100101-100200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1003/1108] rows 100201-100300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1004/1108] rows 100301-100400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1005/1108] rows 100401-100500: 91 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1006/1108] rows 100501-100600: 94 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1007/1108] rows 100601-100700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1008/1108] rows 100701-100800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1009/1108] rows 100801-100900: 88 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1010/1108] rows 100901-101000: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1011/1108] rows 101001-101100: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[1012/1108] rows 101101-101200: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1013/1108] rows 101201-101300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1014/1108] rows 101301-101400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1015/1108] rows 101401-101500: 88 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1016/1108] rows 101501-101600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1017/1108] rows 101601-101700: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1018/1108] rows 101701-101800: 94 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1019/1108] rows 101801-101900: 99 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1020/1108] rows 101901-102000: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1021/1108] rows 102001-102100: 97 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1022/1108] rows 102101-102200: 82 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1023/1108] rows 102201-102300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1024/1108] rows 102301-102400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1025/1108] rows 102401-102500: 99 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1026/1108] rows 102501-102600: 79 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1027/1108] rows 102601-102700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1028/1108] rows 102701-102800: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1029/1108] rows 102801-102900: 87 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1030/1108] rows 102901-103000: 82 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1031/1108] rows 103001-103100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1032/1108] rows 103101-103200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1033/1108] rows 103201-103300: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1034/1108] rows 103301-103400: 97 users (5 new), 100 attendance written, 0 skipped-existing — verified OK
+[1035/1108] rows 103401-103500: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1036/1108] rows 103501-103600: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1037/1108] rows 103601-103700: 87 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1038/1108] rows 103701-103800: 99 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1039/1108] rows 103801-103900: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1040/1108] rows 103901-104000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1041/1108] rows 104001-104100: 89 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1042/1108] rows 104101-104200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1043/1108] rows 104201-104300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1044/1108] rows 104301-104400: 91 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1045/1108] rows 104401-104500: 99 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[1046/1108] rows 104501-104600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1047/1108] rows 104601-104700: 92 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1048/1108] rows 104701-104800: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1049/1108] rows 104801-104900: 100 users (6 new), 100 attendance written, 0 skipped-existing — verified OK
+[1050/1108] rows 104901-105000: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[1051/1108] rows 105001-105100: 86 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1052/1108] rows 105101-105200: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1053/1108] rows 105201-105300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1054/1108] rows 105301-105400: 98 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1055/1108] rows 105401-105500: 95 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1056/1108] rows 105501-105600: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[1057/1108] rows 105601-105700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1058/1108] rows 105701-105800: 95 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1059/1108] rows 105801-105900: 84 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1060/1108] rows 105901-106000: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1061/1108] rows 106001-106100: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1062/1108] rows 106101-106200: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1063/1108] rows 106201-106300: 77 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1064/1108] rows 106301-106400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1065/1108] rows 106401-106500: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1066/1108] rows 106501-106600: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1067/1108] rows 106601-106700: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1068/1108] rows 106701-106800: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1069/1108] rows 106801-106900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1070/1108] rows 106901-107000: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1071/1108] rows 107001-107100: 86 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1072/1108] rows 107101-107200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1073/1108] rows 107201-107300: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1074/1108] rows 107301-107400: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1075/1108] rows 107401-107500: 89 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1076/1108] rows 107501-107600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1077/1108] rows 107601-107700: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1078/1108] rows 107701-107800: 100 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[1079/1108] rows 107801-107900: 91 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1080/1108] rows 107901-108000: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1081/1108] rows 108001-108100: 99 users (7 new), 100 attendance written, 0 skipped-existing — verified OK
+[1082/1108] rows 108101-108200: 86 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1083/1108] rows 108201-108300: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1084/1108] rows 108301-108400: 99 users (4 new), 100 attendance written, 0 skipped-existing — verified OK
+[1085/1108] rows 108401-108500: 93 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1086/1108] rows 108501-108600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1087/1108] rows 108601-108700: 95 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1088/1108] rows 108701-108800: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1089/1108] rows 108801-108900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1090/1108] rows 108901-109000: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1091/1108] rows 109001-109100: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1092/1108] rows 109101-109200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1093/1108] rows 109201-109300: 90 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1094/1108] rows 109301-109400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1095/1108] rows 109401-109500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1096/1108] rows 109501-109600: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1097/1108] rows 109601-109700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1098/1108] rows 109701-109800: 81 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1099/1108] rows 109801-109900: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[1100/1108] rows 109901-110000: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1101/1108] rows 110001-110100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1102/1108] rows 110101-110200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1103/1108] rows 110201-110300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[1104/1108] rows 110301-110400: 91 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1105/1108] rows 110401-110500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[1106/1108] rows 110501-110600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1107/1108] rows 110601-110700: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[1108/1108] rows 110701-110798: 98 users (0 new), 98 attendance written, 0 skipped-existing — verified OK
+Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+Full dataset migrated.
+=== Migration run ended ===
+
+kipped-existing — verified OK
+[2026-07-08T09:37:46.769Z] [1088/1108] rows 108701-108800: 96 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:47.468Z] [1089/1108] rows 108801-108900: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:48.221Z] [1090/1108] rows 108901-109000: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:48.969Z] [1091/1108] rows 109001-109100: 97 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:49.744Z] [1092/1108] rows 109101-109200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:50.466Z] [1093/1108] rows 109201-109300: 90 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:51.172Z] [1094/1108] rows 109301-109400: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:51.905Z] [1095/1108] rows 109401-109500: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:52.717Z] [1096/1108] rows 109501-109600: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:53.396Z] [1097/1108] rows 109601-109700: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:54.120Z] [1098/1108] rows 109701-109800: 81 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:54.861Z] [1099/1108] rows 109801-109900: 100 users (3 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:55.645Z] [1100/1108] rows 109901-110000: 96 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:56.373Z] [1101/1108] rows 110001-110100: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:57.128Z] [1102/1108] rows 110101-110200: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:57.988Z] [1103/1108] rows 110201-110300: 100 users (2 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:58.735Z] [1104/1108] rows 110301-110400: 91 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:37:59.449Z] [1105/1108] rows 110401-110500: 100 users (1 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:38:00.137Z] [1106/1108] rows 110501-110600: 100 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:38:00.846Z] [1107/1108] rows 110601-110700: 91 users (0 new), 100 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:38:01.522Z] [1108/1108] rows 110701-110798: 98 users (0 new), 98 attendance written, 0 skipped-existing — verified OK
+[2026-07-08T09:38:01.525Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-07-08T09:38:01.527Z] Full dataset migrated.
+[2026-07-08T09:38:01.528Z] === Migration run ended ===
+
+[2026-07-09T12:10:51] --- triggered by scheduled task ---
+[2026-07-09T06:40:52.791Z] === Migration run started ===
+[2026-07-09T06:40:52.799Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-09T06:42:22.261Z] Loaded 110798 total rows from source.
+[2026-07-09T06:42:22.264Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-09T06:42:24.946Z]   2695 existing user doc(s) indexed by uid.
+[2026-07-09T06:42:24.948Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-07-09T06:42:24.950Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-07-09T06:42:24.952Z] Full dataset migrated.
+[2026-07-09T06:42:24.953Z] === Migration run ended ===
+
+[2026-07-10T14:01:05] --- triggered by scheduled task ---
+[2026-07-10T08:31:09.779Z] === Migration run started ===
+[2026-07-10T08:31:09.827Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-10T18:42:14] --- triggered by scheduled task ---
+[2026-07-10T13:12:16.707Z] === Migration run started ===
+[2026-07-10T13:12:16.719Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-10T13:12:58.327Z] Loaded 110798 total rows from source.
+[2026-07-10T13:12:58.329Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-10T13:12:59.813Z]   2695 existing user doc(s) indexed by uid.
+[2026-07-10T13:12:59.816Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-07-10T13:12:59.818Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-07-10T13:12:59.819Z] Full dataset migrated.
+[2026-07-10T13:12:59.820Z] === Migration run ended ===
+
+[2026-07-11T19:32:53] --- triggered by scheduled task ---
+[2026-07-13T16:42:20] --- triggered by scheduled task ---
+[2026-07-13T19:08:37] --- triggered by scheduled task ---
+[2026-07-13T13:38:38.760Z] === Migration run started ===
+[2026-07-13T13:38:38.789Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-14T18:25:42] --- triggered by scheduled task ---
+[2026-07-14T12:55:45.299Z] === Migration run started ===
+[2026-07-14T12:55:45.327Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-17T12:16:05] --- triggered by scheduled task ---
+[2026-07-17T06:46:10.091Z] === Migration run started ===
+[2026-07-17T06:46:10.094Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-17T19:31:48] --- triggered by scheduled task ---
+[2026-07-17T14:01:49.987Z] === Migration run started ===
+[2026-07-17T14:01:49.995Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-21T18:00:03] --- triggered by scheduled task ---
+[2026-07-22T20:00:44] --- triggered by scheduled task ---
+[2026-07-22T14:30:46.162Z] === Migration run started ===
+[2026-07-22T14:30:46.212Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-22T14:32:11.774Z] Loaded 110798 total rows from source.
+[2026-07-22T14:32:11.776Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-22T14:32:12.964Z]   2689 existing user doc(s) indexed by uid.
+[2026-07-22T14:32:12.966Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-07-22T14:32:12.968Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-07-22T14:32:12.969Z] Full dataset migrated.
+[2026-07-22T14:32:12.970Z] === Migration run ended ===
+
+[2026-07-24T18:18:23] --- triggered by scheduled task ---
+[2026-07-27T18:00:03] --- triggered by scheduled task ---
+[2026-07-27T12:30:04.353Z] === Migration run started ===
+[2026-07-27T12:30:04.360Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-28T19:17:49] --- triggered by scheduled task ---
+[2026-07-28T13:47:50.526Z] === Migration run started ===
+[2026-07-28T13:47:50.531Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-29T18:00:04] --- triggered by scheduled task ---
+[2026-07-29T12:30:04.848Z] === Migration run started ===
+[2026-07-29T12:30:04.878Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-30T18:50:54] --- triggered by scheduled task ---
+[2026-07-31T18:04:59] --- triggered by scheduled task ---
+[2026-07-31T12:35:00.592Z] === Migration run started ===
+[2026-07-31T12:35:00.629Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-07-31T12:36:15.005Z] Loaded 110798 total rows from source.
+[2026-07-31T12:36:15.013Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-07-31T12:36:18.906Z]   44 existing user doc(s) indexed by uid.
+[2026-07-31T12:36:18.908Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-07-31T12:36:18.910Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-07-31T12:36:18.911Z] Full dataset migrated.
+[2026-07-31T12:36:18.913Z] === Migration run ended ===
+
+[2026-08-01T22:46:16] --- triggered by scheduled task ---
+[2026-08-03T18:32:18] --- triggered by scheduled task ---
+[2026-08-03T13:02:19.359Z] === Migration run started ===
+[2026-08-03T13:02:19.365Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-04T18:00:03] --- triggered by scheduled task ---
+[2026-08-04T12:30:04.528Z] === Migration run started ===
+[2026-08-04T12:30:04.538Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-05T18:26:45] --- triggered by scheduled task ---
+[2026-08-06T23:21:47] --- triggered by scheduled task ---
+[2026-08-06T17:51:47.732Z] === Migration run started ===
+[2026-08-06T17:51:47.742Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-07T18:51:15] --- triggered by scheduled task ---
+[2026-08-07T13:21:16.826Z] === Migration run started ===
+[2026-08-07T13:21:16.837Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-10T14:25:30] --- triggered by scheduled task ---
+[2026-08-10T08:55:32.806Z] === Migration run started ===
+[2026-08-10T08:55:32.812Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-10T18:00:03] --- triggered by scheduled task ---
+[2026-08-10T12:30:04.463Z] === Migration run started ===
+[2026-08-10T12:30:04.468Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-10T12:30:45.288Z] Loaded 110798 total rows from source.
+[2026-08-10T12:30:45.290Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-10T12:30:48.943Z]   44 existing user doc(s) indexed by uid.
+[2026-08-10T12:30:48.945Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-10T12:30:48.946Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-10T12:30:48.947Z] Full dataset migrated.
+[2026-08-10T12:30:48.948Z] === Migration run ended ===
+
+[2026-08-11T18:15:29] --- triggered by scheduled task ---
+[2026-08-11T12:45:31.481Z] === Migration run started ===
+[2026-08-11T12:45:31.491Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-11T12:46:14.941Z] Loaded 110798 total rows from source.
+[2026-08-11T12:46:14.942Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-11T12:46:16.126Z]   44 existing user doc(s) indexed by uid.
+[2026-08-11T12:46:16.128Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-11T12:46:16.129Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-11T12:46:16.132Z] Full dataset migrated.
+[2026-08-11T12:46:16.133Z] === Migration run ended ===
+
+[2026-08-12T18:54:37] --- triggered by scheduled task ---
+[2026-08-12T13:24:39.218Z] === Migration run started ===
+[2026-08-12T13:24:39.255Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-14T18:23:10] --- triggered by scheduled task ---
+[2026-08-14T12:53:12.047Z] === Migration run started ===
+[2026-08-14T12:53:12.075Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-17T18:11:32] --- triggered by scheduled task ---
+[2026-08-17T12:41:34.554Z] === Migration run started ===
+[2026-08-17T12:41:34.561Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-17T12:42:27.115Z] Loaded 110798 total rows from source.
+[2026-08-17T12:42:27.119Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-17T12:42:31.105Z]   44 existing user doc(s) indexed by uid.
+[2026-08-17T12:42:31.111Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-17T12:42:31.113Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-17T12:42:31.114Z] Full dataset migrated.
+[2026-08-17T12:42:31.115Z] === Migration run ended ===
+
+[2026-08-18T18:51:34] --- triggered by scheduled task ---
+[2026-08-18T13:21:35.468Z] === Migration run started ===
+[2026-08-18T13:21:35.481Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-19T18:28:47] --- triggered by scheduled task ---
+[2026-08-19T12:58:49.955Z] === Migration run started ===
+[2026-08-19T12:58:49.966Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-21T12:27:51] --- triggered by scheduled task ---
+[2026-08-21T06:58:00.317Z] === Migration run started ===
+[2026-08-21T06:58:00.360Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-21T18:07:33] --- triggered by scheduled task ---
+[2026-08-21T12:37:34.781Z] === Migration run started ===
+[2026-08-21T12:37:34.794Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-21T12:38:32.592Z] Loaded 110798 total rows from source.
+[2026-08-21T12:38:32.596Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-21T12:38:37.215Z]   44 existing user doc(s) indexed by uid.
+[2026-08-21T12:38:37.219Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-21T12:38:37.220Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-21T12:38:37.221Z] Full dataset migrated.
+[2026-08-21T12:38:37.222Z] === Migration run ended ===
+
+[2026-08-24T19:21:39] --- triggered by scheduled task ---
+[2026-08-25T20:28:56] --- triggered by scheduled task ---
+[2026-08-25T14:58:57.851Z] === Migration run started ===
+[2026-08-25T14:58:57.868Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-26T19:06:20] --- triggered by scheduled task ---
+[2026-08-26T13:36:21.157Z] === Migration run started ===
+[2026-08-26T13:36:21.169Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-26T13:37:13.226Z] Loaded 110798 total rows from source.
+[2026-08-26T13:37:13.242Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-26T13:37:17.403Z]   44 existing user doc(s) indexed by uid.
+[2026-08-26T13:37:17.406Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-26T13:37:17.407Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-26T13:37:17.407Z] Full dataset migrated.
+[2026-08-26T13:37:17.408Z] === Migration run ended ===
+
+[2026-08-28T17:25:19] --- triggered by scheduled task ---
+[2026-08-28T18:00:03] --- triggered by scheduled task ---
+[2026-08-28T12:30:04.536Z] === Migration run started ===
+[2026-08-28T12:30:04.548Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-28T12:30:56.213Z] Loaded 110798 total rows from source.
+[2026-08-28T12:30:56.216Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-28T12:31:00.089Z]   44 existing user doc(s) indexed by uid.
+[2026-08-28T12:31:00.092Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-28T12:31:00.092Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-28T12:31:00.093Z] Full dataset migrated.
+[2026-08-28T12:31:00.094Z] === Migration run ended ===
+
+[2026-08-29T19:55:59] --- triggered by scheduled task ---
+[2026-08-29T14:26:02.036Z] === Migration run started ===
+[2026-08-29T14:26:02.047Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-29T14:26:52.164Z] Loaded 110798 total rows from source.
+[2026-08-29T14:26:52.166Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-08-29T14:26:56.678Z]   44 existing user doc(s) indexed by uid.
+[2026-08-29T14:26:56.682Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-08-29T14:26:56.685Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-08-29T14:26:56.686Z] Full dataset migrated.
+[2026-08-29T14:26:56.687Z] === Migration run ended ===
+
+[2026-08-31T19:16:19] --- triggered by scheduled task ---
+[2026-08-31T13:46:21.550Z] === Migration run started ===
+[2026-08-31T13:46:21.578Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-08-31T19:21:48] --- triggered by scheduled task ---
+[2026-08-31T13:51:49.577Z] === Migration run started ===
+[2026-08-31T13:51:49.582Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-01T23:44:23] --- triggered by scheduled task ---
+[2026-09-01T18:14:24.731Z] === Migration run started ===
+[2026-09-01T18:14:24.742Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-02T19:11:21] --- triggered by scheduled task ---
+[2026-09-02T13:41:23.181Z] === Migration run started ===
+[2026-09-02T13:41:23.225Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-04T12:58:07] --- triggered by scheduled task ---
+[2026-09-04T07:28:13.540Z] === Migration run started ===
+[2026-09-04T07:28:13.569Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-04T19:36:37] --- triggered by scheduled task ---
+[2026-09-04T14:06:39.086Z] === Migration run started ===
+[2026-09-04T14:06:39.099Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-07T18:00:04] --- triggered by scheduled task ---
+[2026-09-07T12:30:05.016Z] === Migration run started ===
+[2026-09-07T12:30:05.022Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-08T19:10:28] --- triggered by scheduled task ---
+[2026-09-08T13:40:32.362Z] === Migration run started ===
+[2026-09-08T13:40:32.415Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-08T13:42:18.722Z] Loaded 110798 total rows from source.
+[2026-09-08T13:42:18.723Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-09-08T13:42:20.900Z]   44 existing user doc(s) indexed by uid.
+[2026-09-08T13:42:20.902Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-09-08T13:42:20.904Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-09-08T13:42:20.906Z] Full dataset migrated.
+[2026-09-08T13:42:20.908Z] === Migration run ended ===
+
+[2026-09-09T18:09:25] --- triggered by scheduled task ---
+[2026-09-11T18:00:03] --- triggered by scheduled task ---
+[2026-09-11T12:30:04.357Z] === Migration run started ===
+[2026-09-11T12:30:04.363Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-12T21:00:48] --- triggered by scheduled task ---
+[2026-09-13T18:00:04] --- triggered by scheduled task ---
+[2026-09-15T22:57:09] --- triggered by scheduled task ---
+[2026-09-16T18:45:32] --- triggered by scheduled task ---
+[2026-09-16T13:15:32.908Z] === Migration run started ===
+[2026-09-16T13:15:32.918Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-16T13:16:23.882Z] Loaded 110798 total rows from source.
+[2026-09-16T13:16:23.885Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-09-16T13:16:28.138Z]   44 existing user doc(s) indexed by uid.
+[2026-09-16T13:16:28.140Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-09-16T13:16:28.142Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-09-16T13:16:28.143Z] Full dataset migrated.
+[2026-09-16T13:16:28.144Z] === Migration run ended ===
+
+[2026-09-17T22:21:13] --- triggered by scheduled task ---
+[2026-09-17T16:51:14.374Z] === Migration run started ===
+[2026-09-17T16:51:14.419Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-18T18:00:04] --- triggered by scheduled task ---
+[2026-09-18T12:30:04.749Z] === Migration run started ===
+[2026-09-18T12:30:04.759Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-19T22:57:48] --- triggered by scheduled task ---
+[2026-09-19T17:27:49.320Z] === Migration run started ===
+[2026-09-19T17:27:49.354Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-21T19:04:57] --- triggered by scheduled task ---
+[2026-09-21T13:34:58.371Z] === Migration run started ===
+[2026-09-21T13:34:58.383Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-22T18:00:03] --- triggered by scheduled task ---
+[2026-09-22T12:30:04.631Z] === Migration run started ===
+[2026-09-22T12:30:04.646Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-22T12:30:44.085Z] Loaded 110798 total rows from source.
+[2026-09-22T12:30:44.087Z] Loading existing users/{uid} map for idempotency (one-time read)...
+[2026-09-22T12:30:48.120Z]   44 existing user doc(s) indexed by uid.
+[2026-09-22T12:30:48.125Z] Resuming from checkpoint: offset 110800 (2671 users, 110687 attendance written so far, 111 skipped).
+[2026-09-22T12:30:48.126Z] Done this run. Totals so far: 2671 new users, 110687 attendance written, 111 attendance skipped (already existed).
+[2026-09-22T12:30:48.127Z] Full dataset migrated.
+[2026-09-22T12:30:48.128Z] === Migration run ended ===
+
+[2026-09-23T21:46:46] --- triggered by scheduled task ---
+[2026-09-23T16:16:47.454Z] === Migration run started ===
+[2026-09-23T16:16:47.492Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-24T23:50:41] --- triggered by scheduled task ---
+[2026-09-24T18:20:44.964Z] === Migration run started ===
+[2026-09-24T18:20:44.975Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-26T00:48:15] --- triggered by scheduled task ---
+[2026-09-28T18:32:36] --- triggered by scheduled task ---
+[2026-09-28T13:02:37.358Z] === Migration run started ===
+[2026-09-28T13:02:37.369Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...
+[2026-09-29T19:05:22] --- triggered by scheduled task ---
+[2026-09-29T13:35:24.794Z] === Migration run started ===
+[2026-09-29T13:35:24.800Z] Dumping full sevakdb_attendance_full.xlsx (this is a one-time read, may take a minute)...

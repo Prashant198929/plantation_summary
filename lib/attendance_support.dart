@@ -194,11 +194,39 @@ class AttendanceSupport {
     return trimmed;
   }
 
+  // In-memory cache of the full Shree_Sadasya collection, shared by every
+  // caller of _fetchMappedUsers (fetchZoneUsers / fetchUsersByHallAndDay /
+  // searchUsers) — those three used to each run their OWN full-collection
+  // `.get()`, so picking a zone, then a hall, then typing a search query
+  // re-read the same ~2.5k docs three separate times. A short TTL bounds how
+  // stale this can get without invalidateMappedUsersCache() being called;
+  // the actual add/edit-member save paths call that explicitly so a change
+  // shows up immediately instead of waiting out the TTL.
+  static List<Map<String, dynamic>>? _mappedUsersCache;
+  static DateTime? _mappedUsersCacheAt;
+  static const Duration _mappedUsersCacheTtl = Duration(minutes: 5);
+
+  // Call after any write to Shree_Sadasya (new member registered, existing
+  // member edited) so the next zone/hall/search fetch reflects it right
+  // away instead of possibly serving a stale cached list for up to
+  // _mappedUsersCacheTtl.
+  static void invalidateMappedUsersCache() {
+    _mappedUsersCache = null;
+    _mappedUsersCacheAt = null;
+  }
+
   static Future<List<Map<String, dynamic>>> _fetchMappedUsers(
     FirebaseFirestore firestore,
   ) async {
+    final cache = _mappedUsersCache;
+    final cacheAt = _mappedUsersCacheAt;
+    if (cache != null &&
+        cacheAt != null &&
+        DateTime.now().difference(cacheAt) < _mappedUsersCacheTtl) {
+      return cache;
+    }
     final snapshot = await firestore.collection('Shree_Sadasya').get();
-    return snapshot.docs.map((doc) {
+    final users = snapshot.docs.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
       final storedMobile = data['mobile']?.toString();
       final mobile = storedMobile == null || storedMobile.isEmpty
@@ -222,8 +250,12 @@ class AttendanceSupport {
         'email': data['email'] ?? '',
         'vehicles': data['vehicles'] ?? [],
         'isActive': data['isActive'] ?? true,
+        'attendanceCount': (data['attendanceCount'] as num?)?.toInt() ?? 0,
       };
     }).toList();
+    _mappedUsersCache = users;
+    _mappedUsersCacheAt = DateTime.now();
+    return users;
   }
 
   static Future<List<Map<String, dynamic>>> fetchZoneUsers(
@@ -535,36 +567,40 @@ class AttendanceSupport {
     }
   }
 
-  // Total historical attendance count per user, tallied from Attendance
-  // records across every month doc (they live at
-  // Attendance/{monthKey}/records/{docId}, so this needs a collectionGroup
-  // query rather than a single collection read). Batched by 30 ids since
-  // Firestore's whereIn caps out there.
-  static Future<Map<String, int>> fetchAttendanceCounts(
-    FirebaseFirestore? secondaryFirestore,
-    List<String> userIds,
-  ) async {
-    if (secondaryFirestore == null) return {};
-    final ids = userIds.where((id) => id.isNotEmpty).toSet().toList();
-    if (ids.isEmpty) return {};
-    final counts = <String, int>{};
-    try {
-      for (var i = 0; i < ids.length; i += 30) {
-        final batch = ids.sublist(i, i + 30 > ids.length ? ids.length : i + 30);
-        final snapshot = await secondaryFirestore
-            .collectionGroup('records')
-            .where('userId', whereIn: batch)
-            .get();
-        for (final doc in snapshot.docs) {
-          final userId = (doc.data())['userId']?.toString();
-          if (userId == null || userId.isEmpty) continue;
-          counts[userId] = (counts[userId] ?? 0) + 1;
-        }
+  // Total historical attendance count per user, read straight off each
+  // user's own attendanceCount field (denormalized onto Shree_Sadasya —
+  // see backfill_attendance_counts.js for the one-time seed, and
+  // _markUserAttendance/_removeAlreadyMarkedAttendance in attendance_page.dart
+  // for the live increment/decrement at mark/unmark time). This used to be a
+  // collectionGroup scan of the ENTIRE Attendance history (every month doc,
+  // every zone) re-run on every hall switch or search — up to ~20s on a
+  // large history — which a per-uid field read makes unnecessary: the count
+  // is already sitting in the same user map _fetchMappedUsers just returned.
+  static Map<String, int> attendanceCountsFromUsers(
+    List<Map<String, dynamic>> users,
+  ) {
+    return {
+      for (final u in users)
+        (u['uid'] ?? '').toString(): (u['attendanceCount'] as int? ?? 0),
+    };
+  }
+
+  // Call right after a successful mark/unmark so the just-changed user's
+  // sort position stays correct immediately, without waiting on the next
+  // Shree_Sadasya refetch to pick up the field write made alongside the
+  // mark/unmark itself. Mutates the shared _mappedUsersCache in place since
+  // attendanceCountsFromUsers reads straight off of it.
+  static void bumpAttendanceCount(String uid, int delta) {
+    if (uid.isEmpty) return;
+    final cache = _mappedUsersCache;
+    if (cache == null) return;
+    for (final user in cache) {
+      if ((user['uid'] ?? '').toString() == uid) {
+        final current = user['attendanceCount'] as int? ?? 0;
+        user['attendanceCount'] = (current + delta).clamp(0, 1 << 30);
+        break;
       }
-    } catch (e) {
-      debugPrint('Error fetching attendance counts: $e');
     }
-    return counts;
   }
 
   // Sorts users by historical attendance count, most-attended first, so

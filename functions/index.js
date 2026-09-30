@@ -21,16 +21,17 @@ exports.deleteAuthOnUserDelete = functions
         const userRecord = await admin.auth().getUserByEmail(data.email);
         uid = userRecord.uid;
       } catch (e) {
-        // Auth account may already be gone — not an error
-        if (e.code !== 'auth/user-not-found') {
-          console.error('getUserByEmail failed:', e.message);
+        if (e.code === 'auth/user-not-found') {
+          console.log('deleteAuthOnUserDelete: no Auth account for email', data.email, '(doc', snap.id + ') — nothing to clean up');
+        } else {
+          console.error('getUserByEmail failed for doc', snap.id, ':', e.message);
         }
         return null;
       }
     }
 
     if (!uid) {
-      console.warn('deleteAuthOnUserDelete: no uid or email on doc', snap.id);
+      console.warn('deleteAuthOnUserDelete: no authUid or email on doc', snap.id, '— cannot clean up any Auth account');
       return null;
     }
 
@@ -38,11 +39,147 @@ exports.deleteAuthOnUserDelete = functions
       await admin.auth().deleteUser(uid);
       console.log('Deleted Auth account:', uid, 'for Firestore doc:', snap.id);
     } catch (e) {
-      if (e.code !== 'auth/user-not-found') {
-        console.error('deleteUser failed:', e.message);
+      if (e.code === 'auth/user-not-found') {
+        console.log('deleteAuthOnUserDelete: Auth account', uid, 'for doc', snap.id, 'already gone (stale authUid?) — nothing to clean up');
+      } else {
+        console.error('deleteUser failed for doc', snap.id, 'uid', uid, ':', e.message);
       }
     }
     return null;
+  });
+
+// Lets a super admin set a new login password for another user directly
+// (bypassing the "forgot password" email flow), from the User Management
+// edit dialog. 'users' docs are keyed by a sequential display id, not the
+// Firebase Auth uid, so both the caller's own role and the target account
+// are resolved via their stored 'authUid' field, falling back to email —
+// the same fallback deleteAuthOnUserDelete above uses.
+exports.adminSetUserPassword = functions
+  .region('us-central1')
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    let callerSnap = await admin.firestore()
+      .collection('users')
+      .where('authUid', '==', context.auth.uid)
+      .limit(1)
+      .get();
+    if (callerSnap.empty && context.auth.token.email) {
+      callerSnap = await admin.firestore()
+        .collection('users')
+        .where('email', '==', context.auth.token.email)
+        .limit(1)
+        .get();
+    }
+    const callerRole = (callerSnap.docs[0]?.get('role') || '').toString().toLowerCase();
+    if (callerRole !== 'super_admin' && callerRole !== 'superadmin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        "Only a super admin can set another user's password.",
+      );
+    }
+
+    const targetAuthUid = (data.authUid || '').toString().trim();
+    const targetEmail = (data.email || '').toString().trim();
+    const newPassword = (data.newPassword || '').toString();
+    if (newPassword.length < 8) {
+      throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 8 characters.');
+    }
+    if (!targetAuthUid && !targetEmail) {
+      throw new functions.https.HttpsError('invalid-argument', 'authUid or email is required to identify the account.');
+    }
+
+    let resolvedUid = targetAuthUid;
+    if (!resolvedUid) {
+      try {
+        const userRecord = await admin.auth().getUserByEmail(targetEmail);
+        resolvedUid = userRecord.uid;
+      } catch (e) {
+        throw new functions.https.HttpsError('not-found', 'No login account found for this user.');
+      }
+    }
+
+    try {
+      await admin.auth().updateUser(resolvedUid, { password: newPassword });
+    } catch (e) {
+      if (e.code === 'auth/user-not-found') {
+        throw new functions.https.HttpsError('not-found', 'No login account found for this user.');
+      }
+      throw new functions.https.HttpsError('internal', e.message);
+    }
+
+    return { success: true };
+  });
+
+// Lets a super admin change another user's login email directly, from the
+// User Management edit dialog. Email doubles as the Firebase Auth login
+// credential once an account has logged in at least once, so the Firestore
+// 'users' doc and the Auth account must be updated together — this updates
+// Auth first (source of truth for login) and the caller only writes the
+// Firestore field afterwards, so a failure here never desyncs the two.
+// Same caller/target resolution as adminSetUserPassword above.
+exports.adminSetUserEmail = functions
+  .region('us-central1')
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
+    }
+
+    let callerSnap = await admin.firestore()
+      .collection('users')
+      .where('authUid', '==', context.auth.uid)
+      .limit(1)
+      .get();
+    if (callerSnap.empty && context.auth.token.email) {
+      callerSnap = await admin.firestore()
+        .collection('users')
+        .where('email', '==', context.auth.token.email)
+        .limit(1)
+        .get();
+    }
+    const callerRole = (callerSnap.docs[0]?.get('role') || '').toString().toLowerCase();
+    if (callerRole !== 'super_admin' && callerRole !== 'superadmin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        "Only a super admin can change another user's email.",
+      );
+    }
+
+    const targetAuthUid = (data.authUid || '').toString().trim();
+    const currentEmail = (data.currentEmail || '').toString().trim();
+    const newEmail = (data.newEmail || '').toString().trim();
+    if (!newEmail) {
+      throw new functions.https.HttpsError('invalid-argument', 'newEmail is required.');
+    }
+    if (!targetAuthUid && !currentEmail) {
+      throw new functions.https.HttpsError('invalid-argument', 'authUid or currentEmail is required to identify the account.');
+    }
+
+    let resolvedUid = targetAuthUid;
+    if (!resolvedUid) {
+      try {
+        const userRecord = await admin.auth().getUserByEmail(currentEmail);
+        resolvedUid = userRecord.uid;
+      } catch (e) {
+        throw new functions.https.HttpsError('not-found', 'No login account found for this user.');
+      }
+    }
+
+    try {
+      await admin.auth().updateUser(resolvedUid, { email: newEmail });
+    } catch (e) {
+      if (e.code === 'auth/user-not-found') {
+        throw new functions.https.HttpsError('not-found', 'No login account found for this user.');
+      }
+      if (e.code === 'auth/email-already-exists') {
+        throw new functions.https.HttpsError('already-exists', 'This email is already used by another login account.');
+      }
+      throw new functions.https.HttpsError('internal', e.message);
+    }
+
+    return { success: true };
   });
 
 exports.sendBroadcastNotification = functions
