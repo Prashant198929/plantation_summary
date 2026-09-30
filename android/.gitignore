@@ -12,3 +12,7 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Firebase service account keys (never commit these); google-services.json is fine
+app/*.json
+!app/google-services.json
